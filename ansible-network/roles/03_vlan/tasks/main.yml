@@ -1,0 +1,23 @@
+# ============================================================
+#  Role: 03_vlan
+#  Mục đích: Tạo VLAN database trên VTP Server (CORE switches)
+#  Áp dụng: CORE only (VTP sẽ đồng bộ xuống Client)
+#
+#  Logic:
+#  - Chỉ chạy trên CORE (VTP Server) vì VTP Client
+#    không được phép tạo VLAN trực tiếp
+#  - Sau khi VLAN được tạo, VTP tự đồng bộ xuống Access
+# ============================================================
+---
+- name: "VLAN | Tạo các VLAN trên VTP Server"
+  cisco.ios.ios_vlans:
+    config:
+      - vlan_id: "{{ item.id }}"
+        name: "{{ item.name }}"
+        state: active
+    state: merged
+  loop: "{{ vlans }}"
+
+- name: "VLAN | Lưu cấu hình"
+  cisco.ios.ios_config:
+    save_when: modified

@@ -1,0 +1,82 @@
+# ============================================================
+#  Host Variables - CORE-2 (HSRP STANDBY)
+# ============================================================
+hostname: "CORE-2"
+snmp_chassis_id: "CORE-2"
+
+# --- OSPF ---
+ospf_router_id: "3.3.3.3"
+ospf_networks:
+  - network: "10.0.0.4"
+    wildcard: "0.0.0.3"
+    area: 0
+  - network: "192.168.10.0"
+    wildcard: "0.0.0.255"
+    area: 0
+  - network: "192.168.20.0"
+    wildcard: "0.0.0.255"
+    area: 0
+  - network: "192.168.99.0"
+    wildcard: "0.0.0.255"
+    area: 0
+
+# --- EtherChannel ---
+etherchannels:
+  - po_id: 3
+    description: "PO3 EtherChannel to Router"
+    ip: "10.0.0.6"
+    mask: "255.255.255.252"
+    members: "Ethernet0/0 - 1"
+    member_desc: "Member of PO3 -> Router"
+    mode: "active"
+    type: "routed"
+  - po_id: 1
+    description: "PO1 EtherChannel to CORE-1"
+    members: "Ethernet0/2 - 3"
+    member_desc: "Member of PO1 -> CORE-1"
+    mode: "active"
+    type: "trunk"
+
+# --- HSRP (Standby - Priority 90) ---
+hsrp_priority: 90
+hsrp_role: "standby"
+dhcp_helper: "10.0.0.5"
+
+svi_interfaces:
+  - vlan_id: 10
+    description: "DATA VLAN Gateway"
+    ip: "192.168.10.3"
+    mask: "255.255.255.0"
+    hsrp_group: 10
+    hsrp_vip: "192.168.10.1"
+  - vlan_id: 20
+    description: "CAMERA VLAN Gateway"
+    ip: "192.168.20.3"
+    mask: "255.255.255.0"
+    hsrp_group: 20
+    hsrp_vip: "192.168.20.1"
+  - vlan_id: 99
+    description: "MANAGEMENT VLAN"
+    ip: "192.168.99.3"
+    mask: "255.255.255.0"
+    hsrp_group: 99
+    hsrp_vip: "192.168.99.1"
+
+# --- STP Priority ---
+stp_root_vlans: "100"
+stp_root_priority: 4096
+stp_secondary_vlans: "10,20,99"
+stp_secondary_priority: 8192
+
+# --- Uplink Trunks to Access ---
+access_uplinks:
+  - interface: "Ethernet1/0"
+    description: "Trunk to AC-1 (e0/1) cross"
+  - interface: "Ethernet1/1"
+    description: "Trunk to AC-2 (e0/1) cross"
+  - interface: "Ethernet1/2"
+    description: "Trunk to AC-3 (e0/1) cross"
+  - interface: "Ethernet1/3"
+    description: "Trunk to AC-4 (e0/1)"
+  - interface: "Ethernet2/0"
+    description: "Trunk to AC-5 (e0/1)"

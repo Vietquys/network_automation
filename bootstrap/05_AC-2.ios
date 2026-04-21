@@ -1,0 +1,49 @@
+! ============================================================
+!  BOOTSTRAP - AC-2
+!  Mục đích: Cấu hình tối thiểu để Ansible kết nối
+! ============================================================
+enable
+configure terminal
+!
+hostname AC-2
+!
+no ip domain-lookup
+!
+enable secret Cisco123
+service password-encryption
+!
+vlan 99
+ name MANAGEMENT
+!
+interface Ethernet0/0
+ description "Trunk to CORE-1 e1/1"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 99
+ no shutdown
+!
+interface Ethernet0/1
+ description "Trunk to CORE-2 e1/1"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 99
+ no shutdown
+!
+interface Vlan99
+ description "Management"
+ ip address 192.168.99.12 255.255.255.0
+ no shutdown
+!
+ip default-gateway 192.168.99.2
+!
+line con 0
+ logging synchronous
+ exec-timeout 0 0
+line vty 0 4
+ password Cisco123
+ login
+ transport input telnet ssh
+!
+end
+!
+! >>> Sau khi paste xong, gõ: write memory <<<

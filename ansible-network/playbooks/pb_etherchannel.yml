@@ -1,0 +1,11 @@
+# ============================================================
+#  Playbook riêng: EtherChannel
+#  Chạy: ansible-playbook playbooks/pb_etherchannel.yml
+# ============================================================
+---
+- name: "ETHERCHANNEL | Cấu hình EtherChannel trên Router + CORE"
+  hosts: routers:core
+  gather_facts: false
+  serial: 1
+  roles:
+    - role: ../roles/05_etherchannel

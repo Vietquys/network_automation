@@ -1,0 +1,74 @@
+# ============================================================
+#  Group Variables - ROUTERS
+# ============================================================
+
+# --- OSPF ---
+ospf_process_id: 1
+ospf_router_id: "1.1.1.1"
+ospf_networks:
+  - network: "10.0.0.0"
+    wildcard: "0.0.0.3"
+    area: 0
+  - network: "10.0.0.4"
+    wildcard: "0.0.0.3"
+    area: 0
+ospf_default_originate: true
+
+# --- DHCP ---
+dhcp_excluded:
+  - start: "192.168.10.1"
+    end: "192.168.10.20"
+  - start: "192.168.20.1"
+    end: "192.168.20.20"
+  - start: "192.168.99.1"
+    end: "192.168.99.20"
+
+dhcp_pools:
+  - name: "VLAN10_DATA"
+    network: "192.168.10.0"
+    mask: "255.255.255.0"
+    gateway: "192.168.10.1"
+    dns: "8.8.8.8 8.8.4.4"
+    domain: "lab.local"
+    lease: "1"
+  - name: "VLAN20_CAMERA"
+    network: "192.168.20.0"
+    mask: "255.255.255.0"
+    gateway: "192.168.20.1"
+    dns: "8.8.8.8 8.8.4.4"
+    domain: "lab.local"
+    lease: "7"
+  - name: "VLAN99_MGMT"
+    network: "192.168.99.0"
+    mask: "255.255.255.0"
+    gateway: "192.168.99.1"
+    dns: "8.8.8.8 8.8.4.4"
+    domain: "lab.local"
+    lease: "3"
+
+# --- EtherChannel (Router side) ---
+etherchannels:
+  - po_id: 2
+    description: "PO2 EtherChannel to CORE-1"
+    ip: "10.0.0.1"
+    mask: "255.255.255.252"
+    members: "Ethernet0/1 - 2"
+    member_desc: "Member of PO2 -> CORE-1"
+    mode: "active"
+    type: "routed"
+  - po_id: 3
+    description: "PO3 EtherChannel to CORE-2"
+    ip: "10.0.0.5"
+    mask: "255.255.255.252"
+    members: "Ethernet1/1 - 2"
+    member_desc: "Member of PO3 -> CORE-2"
+    mode: "active"
+    type: "routed"
+
+# --- SNMP Traps riêng Router ---
+snmp_traps_extra:
+  - "ospf state-change"
+  - "ospf errors"
+  - "hsrp"
+  - "cpu threshold"
+  - "envmon"

@@ -1,0 +1,37 @@
+# ============================================================
+#  Role: 06_stp
+#  Mục đích: Cấu hình Spanning-Tree Protocol
+#  Áp dụng: CORE + ACCESS
+#
+#  Logic:
+#  - Tất cả: Rapid-PVST+ mode
+#  - CORE-1: Root Bridge cho VLAN 10,20,99 (priority 4096)
+#            Secondary cho VLAN 100 (priority 8192)
+#  - CORE-2: Root Bridge cho VLAN 100 (priority 4096)
+#            Secondary cho VLAN 10,20,99 (priority 8192)
+#  - Access: PortFast + BPDU Guard trên downlink ports
+#            (cấu hình trong role 10_access_ports)
+# ============================================================
+---
+- name: "STP | Bật Rapid-PVST+ mode"
+  cisco.ios.ios_config:
+    lines:
+      - "spanning-tree mode {{ stp_mode }}"
+
+# === CORE: Root Bridge ===
+- name: "STP | Cấu hình Root Bridge priority"
+  cisco.ios.ios_config:
+    lines:
+      - "spanning-tree vlan {{ stp_root_vlans }} priority {{ stp_root_priority }}"
+  when: stp_root_vlans is defined
+
+# === CORE: Secondary Root ===
+- name: "STP | Cấu hình Secondary Root priority"
+  cisco.ios.ios_config:
+    lines:
+      - "spanning-tree vlan {{ stp_secondary_vlans }} priority {{ stp_secondary_priority }}"
+  when: stp_secondary_vlans is defined
+
+- name: "STP | Lưu cấu hình"
+  cisco.ios.ios_config:
+    save_when: modified

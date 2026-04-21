@@ -1,0 +1,20 @@
+# ============================================================
+#  Group Variables - CORE SWITCHES
+# ============================================================
+
+# --- VTP ---
+vtp_mode: "server"
+
+# --- Spanning Tree ---
+stp_mode: "rapid-pvst"
+
+# --- OSPF ---
+ospf_process_id: 1
+
+# --- SNMP Traps riêng Core ---
+snmp_traps_extra:
+  - "ospf state-change"
+  - "ospf errors"
+  - "hsrp"
+  - "cpu threshold"
+  - "envmon"

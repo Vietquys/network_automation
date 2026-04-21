@@ -1,0 +1,28 @@
+# ============================================================
+#  Role: 10_access_ports
+#  Mục đích: Cấu hình Access downlink ports (end devices)
+#  Áp dụng: ACCESS switches
+#
+#  Logic:
+#  - AC-1/2/3: e1/0 → VLAN 10 (DATA) cho PC1/PC2/PC3
+#  - AC-4/5:   e1/0 → VLAN 20 (CAMERA) cho Cam-1/Cam-2
+#  - PortFast: Bật trên tất cả access ports → skip STP learning
+#  - BPDU Guard: Bảo vệ khỏi rogue switch cắm vào access port
+# ============================================================
+---
+- name: "ACCESS_PORTS | Cấu hình downlink access ports"
+  cisco.ios.ios_config:
+    lines:
+      - "description \"{{ item.description }}\""
+      - "switchport mode access"
+      - "switchport access vlan {{ item.vlan }}"
+      - "spanning-tree portfast"
+      - "spanning-tree bpduguard enable"
+      - "no shutdown"
+    parents: "interface {{ item.interface }}"
+  loop: "{{ downlink_interfaces }}"
+  when: downlink_interfaces is defined
+
+- name: "ACCESS_PORTS | Lưu cấu hình"
+  cisco.ios.ios_config:
+    save_when: modified

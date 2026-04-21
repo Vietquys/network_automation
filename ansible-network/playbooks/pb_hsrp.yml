@@ -1,0 +1,16 @@
+# ============================================================
+#  Playbook riêng: HSRP
+#  Chạy: ansible-playbook playbooks/pb_hsrp.yml
+# ============================================================
+---
+- name: "HSRP | Cấu hình SVI + HSRP v2 trên CORE"
+  hosts: core
+  gather_facts: false
+  roles:
+    - role: ../roles/07_svi_hsrp
+
+- name: "HSRP | Cập nhật Default Gateway trên Access"
+  hosts: access
+  gather_facts: false
+  roles:
+    - role: ../roles/07_svi_hsrp

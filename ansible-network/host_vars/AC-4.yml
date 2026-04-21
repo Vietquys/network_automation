@@ -1,0 +1,17 @@
+# ============================================================
+#  Host Variables - AC-4
+# ============================================================
+hostname: "AC-4"
+snmp_chassis_id: "AC-4"
+mgmt_ip: "192.168.99.14"
+
+uplink_interfaces:
+  - interface: "Ethernet0/0"
+    description: "Trunk to CORE-1 e1/3 (cross)"
+  - interface: "Ethernet0/1"
+    description: "Trunk to CORE-2 e1/3"
+
+downlink_interfaces:
+  - interface: "Ethernet1/0"
+    description: "Access to Cam-1"
+    vlan: 20

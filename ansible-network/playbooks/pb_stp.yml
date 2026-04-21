@@ -1,0 +1,10 @@
+# ============================================================
+#  Playbook riêng: Spanning Tree
+#  Chạy: ansible-playbook playbooks/pb_stp.yml
+# ============================================================
+---
+- name: "STP | Cấu hình Spanning Tree trên CORE + Access"
+  hosts: core:access
+  gather_facts: false
+  roles:
+    - role: ../roles/06_stp

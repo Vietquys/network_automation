@@ -1,0 +1,10 @@
+# ============================================================
+#  Playbook riêng: OSPF
+#  Chạy: ansible-playbook playbooks/pb_ospf.yml
+# ============================================================
+---
+- name: "OSPF | Cấu hình OSPF Area 0 trên Router + CORE"
+  hosts: routers:core
+  gather_facts: false
+  roles:
+    - role: ../roles/08_ospf

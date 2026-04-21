@@ -1,0 +1,17 @@
+# ============================================================
+#  Host Variables - AC-5
+# ============================================================
+hostname: "AC-5"
+snmp_chassis_id: "AC-5"
+mgmt_ip: "192.168.99.15"
+
+uplink_interfaces:
+  - interface: "Ethernet0/0"
+    description: "Trunk to CORE-1 e2/0 (cross)"
+  - interface: "Ethernet0/1"
+    description: "Trunk to CORE-2 e2/0"
+
+downlink_interfaces:
+  - interface: "Ethernet1/0"
+    description: "Access to Cam-2"
+    vlan: 20

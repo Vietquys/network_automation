@@ -1,0 +1,95 @@
+# ============================================================
+#  Role: 05_etherchannel
+#  Mục đích: Cấu hình EtherChannel (LACP)
+#  Áp dụng: ROUTERS + CORE
+#
+#  Logic:
+#  - PO2: Router (e0/1-2) <-> CORE-1 (e0/0-1) - Routed L3
+#  - PO3: Router (e1/1-2) <-> CORE-2 (e0/0-1) - Routed L3
+#  - PO1: CORE-1 (e0/2-3) <-> CORE-2 (e0/2-3) - Trunk L2
+#
+#  Lưu ý quan trọng:
+#  - Bootstrap dùng standalone e0/0 cho kết nối Router<->CORE
+#  - Role này sẽ chuyển sang EtherChannel, có thể gây gián đoạn
+#    kết nối tạm thời (vài giây) khi interface join channel-group
+#  - Ansible sẽ tự retry kết nối sau khi PO hình thành
+# ============================================================
+---
+# === Cấu hình Routed EtherChannel (Router + CORE uplink to Router) ===
+- name: "ETHERCHANNEL | Cấu hình member ports (Routed)"
+  cisco.ios.ios_config:
+    lines:
+      - "description \"{{ item.member_desc }}\""
+      - "no switchport"
+      - "no ip address"
+      - "channel-group {{ item.po_id }} mode {{ item.mode }}"
+      - "no shutdown"
+    parents: "interface range {{ item.members }}"
+  loop: "{{ etherchannels | selectattr('type', 'equalto', 'routed') | list }}"
+  when: etherchannels is defined
+
+- name: "ETHERCHANNEL | Cấu hình Port-channel interface (Routed)"
+  cisco.ios.ios_config:
+    lines:
+      - "description \"{{ item.description }}\""
+      - "no switchport"
+      - "ip address {{ item.ip }} {{ item.mask }}"
+      - "no shutdown"
+    parents: "interface Port-channel{{ item.po_id }}"
+  loop: "{{ etherchannels | selectattr('type', 'equalto', 'routed') | list }}"
+  when: etherchannels is defined
+
+# === Cấu hình Trunk EtherChannel (PO1 Inter-Core) ===
+- name: "ETHERCHANNEL | Cấu hình member ports (Trunk)"
+  cisco.ios.ios_config:
+    lines:
+      - "description \"{{ item.member_desc }}\""
+      - "switchport trunk encapsulation dot1q"
+      - "switchport mode trunk"
+      - "switchport trunk native vlan {{ native_vlan }}"
+      - "switchport trunk allowed vlan {{ allowed_vlans }}"
+      - "channel-group {{ item.po_id }} mode {{ item.mode }}"
+      - "no shutdown"
+    parents: "interface range {{ item.members }}"
+  loop: "{{ etherchannels | selectattr('type', 'equalto', 'trunk') | list }}"
+  when: etherchannels is defined
+
+- name: "ETHERCHANNEL | Cấu hình Port-channel interface (Trunk)"
+  cisco.ios.ios_config:
+    lines:
+      - "description \"{{ item.description }}\""
+      - "switchport trunk encapsulation dot1q"
+      - "switchport mode trunk"
+      - "switchport trunk native vlan {{ native_vlan }}"
+      - "switchport trunk allowed vlan {{ allowed_vlans }}"
+      - "no shutdown"
+    parents: "interface Port-channel{{ item.po_id }}"
+  loop: "{{ etherchannels | selectattr('type', 'equalto', 'trunk') | list }}"
+  when: etherchannels is defined
+
+# === Xóa static route tạm (bootstrap) trên CORE ===
+- name: "ETHERCHANNEL | Xóa IP standalone bootstrap trên CORE e0/0"
+  cisco.ios.ios_config:
+    lines:
+      - "no ip address"
+    parents: "interface Ethernet0/0"
+  when: "'core' in group_names"
+
+# === Xóa IP standalone bootstrap trên Router ===
+- name: "ETHERCHANNEL | Xóa IP standalone bootstrap trên Router e0/1"
+  cisco.ios.ios_config:
+    lines:
+      - "no ip address"
+    parents: "interface Ethernet0/1"
+  when: "'routers' in group_names"
+
+- name: "ETHERCHANNEL | Xóa IP standalone bootstrap trên Router e1/1"
+  cisco.ios.ios_config:
+    lines:
+      - "no ip address"
+    parents: "interface Ethernet1/1"
+  when: "'routers' in group_names"
+
+- name: "ETHERCHANNEL | Lưu cấu hình"
+  cisco.ios.ios_config:
+    save_when: modified

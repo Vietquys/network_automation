@@ -1,0 +1,43 @@
+# ============================================================
+#  Role: 09_dhcp
+#  Mục đích: DHCP Server (Router) + ip helper-address (Core)
+#  Áp dụng: ROUTERS + CORE
+#
+#  Logic:
+#  - Router: Tạo DHCP pools cho VLAN 10 (DATA), 20 (CAMERA),
+#    99 (MANAGEMENT). Loại trừ IP .1-.20 cho gateway/static.
+#  - CORE: ip helper-address trên SVI → forward DHCP request
+#    từ client về Router (10.0.0.1 cho CORE-1, 10.0.0.5 cho CORE-2)
+#
+#  Lưu ý: ip helper-address đã được cấu hình trong role 07_svi_hsrp
+#  nên role này chỉ tập trung vào DHCP Server trên Router.
+# ============================================================
+---
+# === ROUTER: Excluded addresses ===
+- name: "DHCP | Loại trừ dải IP tĩnh"
+  cisco.ios.ios_config:
+    lines:
+      - "ip dhcp excluded-address {{ item.start }} {{ item.end }}"
+  loop: "{{ dhcp_excluded }}"
+  when:
+    - "'routers' in group_names"
+    - dhcp_excluded is defined
+
+# === ROUTER: DHCP Pools ===
+- name: "DHCP | Tạo DHCP pools"
+  cisco.ios.ios_config:
+    lines:
+      - "network {{ item.network }} {{ item.mask }}"
+      - "default-router {{ item.gateway }}"
+      - "dns-server {{ item.dns }}"
+      - "domain-name {{ item.domain }}"
+      - "lease {{ item.lease }}"
+    parents: "ip dhcp pool {{ item.name }}"
+  loop: "{{ dhcp_pools }}"
+  when:
+    - "'routers' in group_names"
+    - dhcp_pools is defined
+
+- name: "DHCP | Lưu cấu hình"
+  cisco.ios.ios_config:
+    save_when: modified

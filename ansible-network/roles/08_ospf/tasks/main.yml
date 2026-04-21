@@ -1,0 +1,61 @@
+# ============================================================
+#  Role: 08_ospf
+#  Mục đích: Cấu hình OSPF Area 0
+#  Áp dụng: ROUTERS + CORE
+#
+#  Logic:
+#  - Router: OSPF quảng bá 10.0.0.0/30 + 10.0.0.4/30
+#    + default-information originate (chia sẻ default route)
+#  - CORE-1: OSPF quảng bá 10.0.0.0/30 + 192.168.10/20/99.0/24
+#  - CORE-2: OSPF quảng bá 10.0.0.4/30 + 192.168.10/20/99.0/24
+#  - Sau khi OSPF hội tụ, xóa static route tạm từ bootstrap
+#
+#  Router-ID duy nhất cho mỗi thiết bị:
+#    Router=1.1.1.1, CORE-1=2.2.2.2, CORE-2=3.3.3.3
+# ============================================================
+---
+- name: "OSPF | Cấu hình router-id"
+  cisco.ios.ios_config:
+    lines:
+      - "router-id {{ ospf_router_id }}"
+    parents: "router ospf {{ ospf_process_id }}"
+
+- name: "OSPF | Cấu hình network statements"
+  cisco.ios.ios_config:
+    lines:
+      - "network {{ item.network }} {{ item.wildcard }} area {{ item.area }}"
+    parents: "router ospf {{ ospf_process_id }}"
+  loop: "{{ ospf_networks }}"
+
+- name: "OSPF | Bật default-information originate (Router only)"
+  cisco.ios.ios_config:
+    lines:
+      - "default-information originate"
+    parents: "router ospf {{ ospf_process_id }}"
+  when: ospf_default_originate is defined and ospf_default_originate
+
+# === Xóa static route tạm từ bootstrap ===
+- name: "OSPF | Xóa static route bootstrap trên Router"
+  cisco.ios.ios_config:
+    lines:
+      - "no ip route 192.168.99.0 255.255.255.0 10.0.0.2"
+  when: "'routers' in group_names"
+  ignore_errors: true
+
+- name: "OSPF | Xóa static route bootstrap trên CORE-1"
+  cisco.ios.ios_config:
+    lines:
+      - "no ip route 0.0.0.0 0.0.0.0 10.0.0.1"
+  when: inventory_hostname == 'CORE-1'
+  ignore_errors: true
+
+- name: "OSPF | Xóa static route bootstrap trên CORE-2"
+  cisco.ios.ios_config:
+    lines:
+      - "no ip route 0.0.0.0 0.0.0.0 10.0.0.5"
+  when: inventory_hostname == 'CORE-2'
+  ignore_errors: true
+
+- name: "OSPF | Lưu cấu hình"
+  cisco.ios.ios_config:
+    save_when: modified

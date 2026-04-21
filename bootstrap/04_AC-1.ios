@@ -1,0 +1,59 @@
+! ============================================================
+!  BOOTSTRAP - AC-1
+!  Mục đích: Cấu hình tối thiểu để Ansible kết nối
+!  Kết nối: Ansible -> Router -> CORE -> Trunk -> AC-1 SVI Vlan99
+! ============================================================
+enable
+configure terminal
+!
+hostname AC-1
+!
+no ip domain-lookup
+!
+! --- Enable Secret ---
+enable secret Cisco123
+service password-encryption
+!
+! --- VLAN 99 Management ---
+vlan 99
+ name MANAGEMENT
+!
+! --- Uplink Trunk to CORE-1 ---
+interface Ethernet0/0
+ description "Trunk to CORE-1 e1/0"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 99
+ no shutdown
+!
+! --- Uplink Trunk to CORE-2 ---
+interface Ethernet0/1
+ description "Trunk to CORE-2 e1/0"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 99
+ no shutdown
+!
+! --- Management SVI ---
+interface Vlan99
+ description "Management"
+ ip address 192.168.99.11 255.255.255.0
+ no shutdown
+!
+! --- Default Gateway (CORE-1 real IP, chưa có HSRP VIP) ---
+ip default-gateway 192.168.99.2
+!
+! --- Console ---
+line con 0
+ logging synchronous
+ exec-timeout 0 0
+!
+! --- VTY Access ---
+line vty 0 4
+ password Cisco123
+ login
+ transport input telnet ssh
+!
+end
+!
+! >>> Sau khi paste xong, gõ: write memory <<<

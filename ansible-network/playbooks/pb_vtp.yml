@@ -1,0 +1,16 @@
+# ============================================================
+#  Playbook riêng: VTP
+#  Chạy: ansible-playbook playbooks/pb_vtp.yml
+# ============================================================
+---
+- name: "VTP | Cấu hình VTP trên CORE (Server)"
+  hosts: core
+  gather_facts: false
+  roles:
+    - role: ../roles/02_vtp
+
+- name: "VTP | Cấu hình VTP trên Access (Client)"
+  hosts: access
+  gather_facts: false
+  roles:
+    - role: ../roles/02_vtp

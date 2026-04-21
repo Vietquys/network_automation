@@ -1,0 +1,101 @@
+! ============================================================
+!  BOOTSTRAP - CORE-2
+!  Mục đích: Cấu hình tối thiểu để Ansible kết nối
+!  Kết nối: Ansible -> Router -> 10.0.0.6 -> CORE-2 SVI Vlan99
+! ============================================================
+enable
+configure terminal
+!
+hostname CORE-2
+!
+no ip domain-lookup
+ip routing
+!
+! --- Enable Secret ---
+enable secret Cisco123
+service password-encryption
+!
+! --- Standalone link to Router (sau này Ansible đưa vào EtherChannel PO3) ---
+interface Ethernet0/0
+ no switchport
+ ip address 10.0.0.6 255.255.255.252
+ no shutdown
+!
+! --- VLAN 99 Management ---
+vlan 99
+ name MANAGEMENT
+!
+! --- SVI VLAN 99 ---
+interface Vlan99
+ description "Management VLAN"
+ ip address 192.168.99.3 255.255.255.0
+ no shutdown
+!
+! --- Trunk to Access Switches (cho VLAN 99 lưu thông) ---
+interface Ethernet1/0
+ description "Trunk to AC-1 (e0/1)"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 99
+ no shutdown
+!
+interface Ethernet1/1
+ description "Trunk to AC-2 (e0/1)"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 99
+ no shutdown
+!
+interface Ethernet1/2
+ description "Trunk to AC-3 (e0/1)"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 99
+ no shutdown
+!
+interface Ethernet1/3
+ description "Trunk to AC-4 (e0/1)"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 99
+ no shutdown
+!
+interface Ethernet2/0
+ description "Trunk to AC-5 (e0/1)"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 99
+ no shutdown
+!
+! --- Inter-Core Trunk to CORE-1 (cho VLAN 99 đồng bộ) ---
+interface Ethernet0/2
+ description "Trunk to CORE-1 (e0/2)"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 99
+ no shutdown
+!
+interface Ethernet0/3
+ description "Trunk to CORE-1 (e0/3)"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 99
+ no shutdown
+!
+! --- Default route tạm về Router ---
+ip route 0.0.0.0 0.0.0.0 10.0.0.5
+!
+! --- Console ---
+line con 0
+ logging synchronous
+ exec-timeout 0 0
+!
+! --- VTY Access ---
+line vty 0 4
+ password Cisco123
+ login
+ transport input telnet ssh
+!
+end
+!
+! >>> Sau khi paste xong, gõ: write memory <<<

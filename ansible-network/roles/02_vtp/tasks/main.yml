@@ -1,0 +1,29 @@
+# ============================================================
+#  Role: 02_vtp
+#  Mục đích: Cấu hình VTP domain, mode, password
+#  Áp dụng: CORE (server) + ACCESS (client)
+#
+#  Logic:
+#  - CORE switches: VTP Server → tạo và quảng bá VLAN
+#  - Access switches: VTP Client → nhận VLAN từ CORE
+#  - Tất cả dùng chung domain "LAB" và password "Cisco123"
+# ============================================================
+---
+- name: "VTP | Cấu hình VTP mode {{ vtp_mode }}"
+  cisco.ios.ios_config:
+    lines:
+      - "vtp mode {{ vtp_mode }}"
+
+- name: "VTP | Cấu hình VTP domain"
+  cisco.ios.ios_config:
+    lines:
+      - "vtp domain {{ vtp_domain }}"
+
+- name: "VTP | Cấu hình VTP password"
+  cisco.ios.ios_config:
+    lines:
+      - "vtp password {{ vtp_password }}"
+
+- name: "VTP | Lưu cấu hình"
+  cisco.ios.ios_config:
+    save_when: modified

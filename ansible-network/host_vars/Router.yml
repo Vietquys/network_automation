@@ -1,0 +1,18 @@
+# ============================================================
+#  Host Variables - Router
+# ============================================================
+hostname: "Router"
+snmp_chassis_id: "Router"
+
+# --- Interfaces ---
+wan_interface:
+  name: "Ethernet0/0"
+  description: "Uplink to OPNsense eth3"
+  ip: "192.168.9.99"
+  mask: "255.255.255.0"
+
+# --- Static Routes ---
+static_routes:
+  - dest: "0.0.0.0"
+    mask: "0.0.0.0"
+    next_hop: "192.168.9.100"

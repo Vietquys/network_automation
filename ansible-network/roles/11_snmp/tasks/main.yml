@@ -1,0 +1,53 @@
+# ============================================================
+#  Role: 11_snmp
+#  Mục đích: Cấu hình SNMPv2c trap đẩy log về Zabbix
+#  Áp dụng: ALL devices
+#
+#  Logic:
+#  - ACL 10: Chỉ cho phép Zabbix Server (192.168.6.101) poll SNMP
+#  - Community RO "LabReadOnly" gắn với ACL 10
+#  - Trap host: gửi trap về Zabbix dùng SNMPv2c
+#  - Các loại trap: khác nhau giữa Router/Core/Access
+#    + Router/Core: thêm OSPF, HSRP, CPU, envmon
+#    + Access: thêm mac-notification
+# ============================================================
+---
+- name: "SNMP | Cấu hình ACL cho Zabbix"
+  cisco.ios.ios_config:
+    lines:
+      - "access-list 10 permit {{ zabbix_server }}"
+
+- name: "SNMP | Cấu hình SNMP community với ACL"
+  cisco.ios.ios_config:
+    lines:
+      - "snmp-server community {{ snmp_community_ro }} RO 10"
+
+- name: "SNMP | Cấu hình SNMP contact/location/chassis-id"
+  cisco.ios.ios_config:
+    lines:
+      - "snmp-server contact {{ snmp_contact }}"
+      - "snmp-server location {{ snmp_location }}"
+      - "snmp-server chassis-id {{ snmp_chassis_id }}"
+
+- name: "SNMP | Cấu hình trap host (Zabbix)"
+  cisco.ios.ios_config:
+    lines:
+      - "snmp-server enable traps"
+      - "snmp-server host {{ zabbix_server }} version 2c {{ snmp_community_ro }}"
+
+- name: "SNMP | Bật SNMP traps chung"
+  cisco.ios.ios_config:
+    lines:
+      - "snmp-server enable traps {{ item }}"
+  loop: "{{ snmp_traps_common }}"
+
+- name: "SNMP | Bật SNMP traps riêng theo nhóm thiết bị"
+  cisco.ios.ios_config:
+    lines:
+      - "snmp-server enable traps {{ item }}"
+  loop: "{{ snmp_traps_extra }}"
+  when: snmp_traps_extra is defined
+
+- name: "SNMP | Lưu cấu hình"
+  cisco.ios.ios_config:
+    save_when: modified

@@ -1,0 +1,67 @@
+# ============================================================
+#  Role: 07_svi_hsrp
+#  Mục đích: Cấu hình SVI + HSRP v2 (CORE), SVI + GW (Access)
+#  Áp dụng: CORE + ACCESS
+#
+#  Logic:
+#  - CORE-1: SVI VLAN 10/20/99 với HSRP priority 110 (Active)
+#  - CORE-2: SVI VLAN 10/20/99 với HSRP priority 90 (Standby)
+#  - HSRP VIP là .1 của mỗi subnet (gateway cho end devices)
+#  - Preempt bật trên cả 2 CORE → nếu Active down, Standby lên
+#  - Auth md5 key-string Cisco123 → bảo mật HSRP messages
+#  - Access: SVI VLAN 99 + ip default-gateway .1 (HSRP VIP)
+#
+#  Thứ tự: Role này chạy SAU EtherChannel để HSRP VIP hoạt động
+#  trên cả 2 CORE, sau đó Access mới đổi gateway sang .1
+# ============================================================
+---
+# === CORE: ip routing ===
+- name: "SVI_HSRP | Bật ip routing trên CORE"
+  cisco.ios.ios_config:
+    lines:
+      - "ip routing"
+  when: "'core' in group_names"
+
+# === CORE: SVI + HSRP ===
+- name: "SVI_HSRP | Cấu hình SVI + HSRP v2 trên CORE"
+  cisco.ios.ios_config:
+    lines:
+      - "description \"{{ item.description }}\""
+      - "ip address {{ item.ip }} {{ item.mask }}"
+      - "ip helper-address {{ dhcp_helper }}"
+      - "standby version 2"
+      - "standby {{ item.hsrp_group }} ip {{ item.hsrp_vip }}"
+      - "standby {{ item.hsrp_group }} priority {{ hsrp_priority }}"
+      - "standby {{ item.hsrp_group }} preempt"
+      - "standby {{ item.hsrp_group }} authentication md5 key-string {{ hsrp_auth_key }}"
+      - "no shutdown"
+    parents: "interface Vlan{{ item.vlan_id }}"
+  loop: "{{ svi_interfaces }}"
+  when:
+    - "'core' in group_names"
+    - svi_interfaces is defined
+
+# === ACCESS: SVI VLAN 99 ===
+- name: "SVI_HSRP | Cấu hình SVI VLAN 99 trên Access"
+  cisco.ios.ios_config:
+    lines:
+      - "description \"Management\""
+      - "ip address {{ mgmt_ip }} 255.255.255.0"
+      - "no shutdown"
+    parents: "interface Vlan99"
+  when:
+    - "'access' in group_names"
+    - mgmt_ip is defined
+
+# === ACCESS: Default Gateway (HSRP VIP) ===
+- name: "SVI_HSRP | Cấu hình default-gateway trên Access (HSRP VIP)"
+  cisco.ios.ios_config:
+    lines:
+      - "ip default-gateway {{ default_gateway }}"
+  when:
+    - "'access' in group_names"
+    - default_gateway is defined
+
+- name: "SVI_HSRP | Lưu cấu hình"
+  cisco.ios.ios_config:
+    save_when: modified

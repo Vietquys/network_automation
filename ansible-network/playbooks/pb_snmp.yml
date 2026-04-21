@@ -1,0 +1,10 @@
+# ============================================================
+#  Playbook riêng: SNMP
+#  Chạy: ansible-playbook playbooks/pb_snmp.yml
+# ============================================================
+---
+- name: "SNMP | Cấu hình SNMP Traps trên tất cả thiết bị"
+  hosts: network
+  gather_facts: false
+  roles:
+    - role: ../roles/11_snmp

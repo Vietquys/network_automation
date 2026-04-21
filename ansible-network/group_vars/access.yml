@@ -1,0 +1,17 @@
+# ============================================================
+#  Group Variables - ACCESS SWITCHES
+# ============================================================
+
+# --- VTP ---
+vtp_mode: "client"
+
+# --- Spanning Tree ---
+stp_mode: "rapid-pvst"
+
+# --- Default Gateway ---
+# Sẽ được đổi thành HSRP VIP (192.168.99.1) sau khi HSRP active
+default_gateway: "192.168.99.1"
+
+# --- SNMP Traps riêng Access ---
+snmp_traps_extra:
+  - "mac-notification change move threshold"

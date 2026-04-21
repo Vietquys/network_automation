@@ -1,0 +1,10 @@
+# ============================================================
+#  Playbook riêng: DHCP
+#  Chạy: ansible-playbook playbooks/pb_dhcp.yml
+# ============================================================
+---
+- name: "DHCP | Cấu hình DHCP Server trên Router"
+  hosts: routers
+  gather_facts: false
+  roles:
+    - role: ../roles/09_dhcp

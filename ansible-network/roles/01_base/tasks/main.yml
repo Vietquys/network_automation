@@ -1,0 +1,44 @@
+# ============================================================
+#  Role: 01_base
+#  Mục đích: Cấu hình cơ bản (hostname, credentials, console)
+#  Áp dụng: ALL devices
+# ============================================================
+---
+- name: "BASE | Cấu hình hostname"
+  cisco.ios.ios_config:
+    lines:
+      - "hostname {{ hostname }}"
+
+- name: "BASE | Tắt DNS lookup"
+  cisco.ios.ios_config:
+    lines:
+      - "no ip domain-lookup"
+
+- name: "BASE | Bật service password-encryption"
+  cisco.ios.ios_config:
+    lines:
+      - "service password-encryption"
+
+- name: "BASE | Cấu hình enable secret"
+  cisco.ios.ios_config:
+    lines:
+      - "enable secret {{ enable_secret }}"
+
+- name: "BASE | Cấu hình line console"
+  cisco.ios.ios_config:
+    lines:
+      - "logging synchronous"
+      - "exec-timeout 0 0"
+    parents: "line con 0"
+
+- name: "BASE | Cấu hình line VTY 0 4"
+  cisco.ios.ios_config:
+    lines:
+      - "password {{ vty_password }}"
+      - "login"
+      - "transport input telnet ssh"
+    parents: "line vty 0 4"
+
+- name: "BASE | Lưu cấu hình"
+  cisco.ios.ios_config:
+    save_when: modified

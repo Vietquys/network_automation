@@ -1,0 +1,129 @@
+# ============================================================
+#  MASTER PLAYBOOK - site.yml
+#  Chạy: ansible-playbook site.yml
+#
+#  Thứ tự thực thi (quan trọng):
+#  1. Base config trên tất cả thiết bị
+#  2. VTP + VLAN trên Core (tạo VLAN trước, VTP sync xuống)
+#  3. VTP trên Access (đặt mode Client)
+#  4. EtherChannel trên Router + Core (thiết lập L3 links)
+#  5. Trunk trên Core + Access (mở đầy đủ VLAN)
+#  6. STP trên Core + Access (ổn định topology)
+#  7. SVI + HSRP trên Core (tạo VIP gateway)
+#  8. SVI + default-gw trên Access (dùng HSRP VIP)
+#  9. OSPF trên Router + Core (routing động)
+#  10. DHCP trên Router (cấp IP cho clients)
+#  11. Access ports trên Access (gán VLAN cho end devices)
+#  12. SNMP trên tất cả (monitoring)
+# ============================================================
+---
+# ============================================================
+#  PLAY 1: Base config - TẤT CẢ thiết bị
+# ============================================================
+- name: "PLAY 1 | Cấu hình cơ bản trên tất cả thiết bị"
+  hosts: network
+  gather_facts: false
+  roles:
+    - role: 01_base
+
+# ============================================================
+#  PLAY 2: VTP + VLAN - CORE switches (VTP Server tạo VLAN)
+# ============================================================
+- name: "PLAY 2 | Cấu hình VTP Server + VLAN trên CORE"
+  hosts: core
+  gather_facts: false
+  roles:
+    - role: 02_vtp
+    - role: 03_vlan
+
+# ============================================================
+#  PLAY 3: VTP - ACCESS switches (VTP Client)
+# ============================================================
+- name: "PLAY 3 | Cấu hình VTP Client trên Access"
+  hosts: access
+  gather_facts: false
+  roles:
+    - role: 02_vtp
+
+# ============================================================
+#  PLAY 4: EtherChannel - ROUTER + CORE
+#  Lưu ý: Có thể gây gián đoạn kết nối tạm thời
+# ============================================================
+- name: "PLAY 4 | Cấu hình EtherChannel (LACP) trên Router + CORE"
+  hosts: routers:core
+  gather_facts: false
+  serial: 1
+  roles:
+    - role: 05_etherchannel
+
+# ============================================================
+#  PLAY 5: Trunk - CORE + ACCESS (mở đầy đủ VLAN allowed)
+# ============================================================
+- name: "PLAY 5 | Cấu hình Trunk ports trên CORE + Access"
+  hosts: core:access
+  gather_facts: false
+  roles:
+    - role: 04_trunk
+
+# ============================================================
+#  PLAY 6: Spanning Tree - CORE + ACCESS
+# ============================================================
+- name: "PLAY 6 | Cấu hình Spanning Tree trên CORE + Access"
+  hosts: core:access
+  gather_facts: false
+  roles:
+    - role: 06_stp
+
+# ============================================================
+#  PLAY 7: SVI + HSRP - CORE (tạo gateway VIP trước)
+# ============================================================
+- name: "PLAY 7 | Cấu hình SVI + HSRP v2 trên CORE"
+  hosts: core
+  gather_facts: false
+  roles:
+    - role: 07_svi_hsrp
+
+# ============================================================
+#  PLAY 8: SVI + Default GW - ACCESS (dùng HSRP VIP)
+# ============================================================
+- name: "PLAY 8 | Cấu hình SVI + Default Gateway trên Access"
+  hosts: access
+  gather_facts: false
+  roles:
+    - role: 07_svi_hsrp
+
+# ============================================================
+#  PLAY 9: OSPF - ROUTER + CORE
+# ============================================================
+- name: "PLAY 9 | Cấu hình OSPF Area 0 trên Router + CORE"
+  hosts: routers:core
+  gather_facts: false
+  roles:
+    - role: 08_ospf
+
+# ============================================================
+#  PLAY 10: DHCP - ROUTER (Server) + CORE (helper đã có ở Play 7)
+# ============================================================
+- name: "PLAY 10 | Cấu hình DHCP Server trên Router"
+  hosts: routers
+  gather_facts: false
+  roles:
+    - role: 09_dhcp
+
+# ============================================================
+#  PLAY 11: Access Ports - ACCESS (gán VLAN cho end devices)
+# ============================================================
+- name: "PLAY 11 | Cấu hình Access Ports (downlinks)"
+  hosts: access
+  gather_facts: false
+  roles:
+    - role: 10_access_ports
+
+# ============================================================
+#  PLAY 12: SNMP - TẤT CẢ thiết bị
+# ============================================================
+- name: "PLAY 12 | Cấu hình SNMP Traps cho Zabbix"
+  hosts: network
+  gather_facts: false
+  roles:
+    - role: 11_snmp

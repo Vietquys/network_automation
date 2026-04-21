@@ -1,0 +1,51 @@
+# ============================================================
+#  Group Variables - ALL DEVICES
+#  Biến chung cho tất cả thiết bị trong inventory
+# ============================================================
+
+# --- Ansible Connection ---
+ansible_connection: ansible.netcommon.network_cli
+ansible_network_os: cisco.ios.ios
+ansible_password: "Cisco123"
+ansible_become: true
+ansible_become_method: enable
+ansible_become_password: "Cisco123"
+ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+
+# --- Credentials ---
+enable_secret: "Cisco123"
+vty_password: "Cisco123"
+vtp_password: "Cisco123"
+vtp_domain: "LAB"
+hsrp_auth_key: "Cisco123"
+
+# --- VLANs ---
+vlans:
+  - id: 10
+    name: DATA
+  - id: 20
+    name: CAMERA
+  - id: 99
+    name: MANAGEMENT
+  - id: 100
+    name: NATIVE
+
+native_vlan: 100
+allowed_vlans: "10,20,99,100"
+
+# --- SNMP ---
+snmp_community_ro: "LabReadOnly"
+snmp_community_rw: "LabReadWrite"
+snmp_contact: "admin@lab.local"
+snmp_location: "Server-Room"
+zabbix_server: "192.168.6.101"
+
+# --- SNMP Traps chung ---
+snmp_traps_common:
+  - "snmp authentication linkdown linkup coldstart warmstart"
+  - "vtp"
+  - "vlancreate"
+  - "vlandelete"
+  - "config"
+  - "port-security"
+  - "stpx inconsistency"

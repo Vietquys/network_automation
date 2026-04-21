@@ -1,0 +1,45 @@
+# ============================================================
+#  Role: 04_trunk
+#  Mục đích: Cấu hình Trunk ports (uplinks CORE<->Access)
+#  Áp dụng: CORE + ACCESS
+#
+#  Logic:
+#  - CORE: Trunk trên uplink xuống Access (e1/0~e2/0)
+#    + PO1 inter-core trunk (đã cấu hình trong EtherChannel role)
+#    + PortFast trunk trên uplinks đến Access
+#  - Access: Trunk trên uplink lên CORE (e0/0, e0/1)
+#  - Tất cả trunk dùng dot1q encap, native VLAN 100
+# ============================================================
+---
+# === CORE: Trunk ports đến Access ===
+- name: "TRUNK | Cấu hình trunk ports CORE -> Access"
+  cisco.ios.ios_config:
+    lines:
+      - "description \"{{ item.description }}\""
+      - "switchport trunk encapsulation dot1q"
+      - "switchport mode trunk"
+      - "switchport trunk native vlan {{ native_vlan }}"
+      - "switchport trunk allowed vlan {{ allowed_vlans }}"
+      - "spanning-tree portfast trunk"
+      - "no shutdown"
+    parents: "interface {{ item.interface }}"
+  loop: "{{ access_uplinks }}"
+  when: access_uplinks is defined
+
+# === ACCESS: Trunk ports đến CORE ===
+- name: "TRUNK | Cấu hình trunk ports Access -> CORE"
+  cisco.ios.ios_config:
+    lines:
+      - "description \"{{ item.description }}\""
+      - "switchport trunk encapsulation dot1q"
+      - "switchport mode trunk"
+      - "switchport trunk native vlan {{ native_vlan }}"
+      - "switchport trunk allowed vlan {{ allowed_vlans }}"
+      - "no shutdown"
+    parents: "interface {{ item.interface }}"
+  loop: "{{ uplink_interfaces }}"
+  when: uplink_interfaces is defined
+
+- name: "TRUNK | Lưu cấu hình"
+  cisco.ios.ios_config:
+    save_when: modified
