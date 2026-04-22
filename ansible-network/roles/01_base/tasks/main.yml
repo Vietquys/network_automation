@@ -14,6 +14,11 @@
     lines:
       - "no ip domain-lookup"
 
+- name: "BASE | Cấu hình domain cho SSH"
+  cisco.ios.ios_config:
+    lines:
+      - "ip domain-name {{ ssh_domain_name }}"
+
 - name: "BASE | Bật service password-encryption"
   cisco.ios.ios_config:
     lines:
@@ -23,6 +28,17 @@
   cisco.ios.ios_config:
     lines:
       - "enable secret {{ enable_secret }}"
+
+- name: "BASE | Tạo local user cho SSH"
+  cisco.ios.ios_config:
+    lines:
+      - "username {{ local_user }} privilege 15 secret {{ local_user_password }}"
+
+- name: "BASE | Bật SSH version 2"
+  cisco.ios.ios_config:
+    lines:
+      - "ip ssh version 2"
+      - "ip ssh authentication-retries 3"
 
 - name: "BASE | Cấu hình line console"
   cisco.ios.ios_config:
@@ -34,9 +50,8 @@
 - name: "BASE | Cấu hình line VTY 0 4"
   cisco.ios.ios_config:
     lines:
-      - "password {{ vty_password }}"
-      - "login"
-      - "transport input telnet ssh"
+      - "login local"
+      - "transport input ssh"
     parents: "line vty 0 4"
 
 - name: "BASE | Lưu cấu hình"

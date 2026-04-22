@@ -6,36 +6,45 @@
 enable
 configure terminal
 !
-hostname Router
+hostname router
 !
 no ip domain-lookup
+ip domain-name lab.local
 !
 ! --- Enable Secret ---
 enable secret Cisco123
 service password-encryption
 !
+! --- User for SSH / Ansible ---
+username Cisco123 privilege 15 secret Cisco123
+!
+! --- Generate RSA key (IOL nên dùng 1024) ---
+crypto key generate rsa modulus 1024
+!
+ip ssh version 2
+!
 ! --- Uplink to OPNsense ---
 interface Ethernet0/0
- description "Uplink to OPNsense eth3"
+ description Uplink to OPNsense eth3
  ip address 192.168.9.99 255.255.255.0
  no shutdown
 !
-! --- Standalone link to CORE-1 (sau này Ansible sẽ đưa vào EtherChannel PO2) ---
+! --- Link to CORE-1 ---
 interface Ethernet0/1
- description "Bootstrap link to CORE-1 e0/0"
+ description Bootstrap link to CORE-1 e0/0
  ip address 10.0.0.1 255.255.255.252
  no shutdown
 !
-! --- Standalone link to CORE-2 (sau này Ansible sẽ đưa vào EtherChannel PO3) ---
+! --- Link to CORE-2 ---
 interface Ethernet1/1
- description "Bootstrap link to CORE-2 e0/0"
+ description Bootstrap link to CORE-2 e0/0
  ip address 10.0.0.5 255.255.255.252
  no shutdown
 !
-! --- Default route to OPNsense ---
+! --- Default route ---
 ip route 0.0.0.0 0.0.0.0 192.168.9.100
 !
-! --- Static route tạm đến Management VLAN (qua CORE-1) ---
+! --- Route to Management VLAN ---
 ip route 192.168.99.0 255.255.255.0 10.0.0.2
 !
 ! --- Console ---
@@ -43,11 +52,10 @@ line con 0
  logging synchronous
  exec-timeout 0 0
 !
-! --- VTY Access ---
+! --- VTY (SSH only) ---
 line vty 0 4
- password Cisco123
- login
- transport input telnet ssh
+ login local
+ transport input ssh
 !
 end
 !

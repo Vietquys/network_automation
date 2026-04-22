@@ -8,9 +8,18 @@ configure terminal
 hostname AC-5
 !
 no ip domain-lookup
+ip domain-name lab.local
 !
 enable secret Cisco123
 service password-encryption
+!
+! --- User for SSH / Ansible ---
+username Cisco123 privilege 15 secret Cisco123
+!
+! --- Generate RSA key (IOL nên dùng 1024) ---
+crypto key generate rsa modulus 1024
+!
+ip ssh version 2
 !
 vlan 99
  name MANAGEMENT
@@ -40,9 +49,8 @@ line con 0
  logging synchronous
  exec-timeout 0 0
 line vty 0 4
- password Cisco123
- login
- transport input telnet ssh
+ login local
+ transport input ssh
 !
 end
 !

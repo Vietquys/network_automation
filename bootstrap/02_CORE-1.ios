@@ -9,11 +9,20 @@ configure terminal
 hostname CORE-1
 !
 no ip domain-lookup
+ip domain-name lab.local
 ip routing
 !
 ! --- Enable Secret ---
 enable secret Cisco123
 service password-encryption
+!
+! --- User for SSH / Ansible ---
+username Cisco123 privilege 15 secret Cisco123
+!
+! --- Generate RSA key (IOL nên dùng 1024) ---
+crypto key generate rsa modulus 1024
+!
+ip ssh version 2
 !
 ! --- Standalone link to Router (sau này Ansible đưa vào EtherChannel PO2) ---
 interface Ethernet0/0
@@ -92,9 +101,8 @@ line con 0
 !
 ! --- VTY Access ---
 line vty 0 4
- password Cisco123
- login
- transport input telnet ssh
+ login local
+ transport input ssh
 !
 end
 !

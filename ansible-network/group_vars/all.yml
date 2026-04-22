@@ -6,6 +6,7 @@
 # --- Ansible Connection ---
 ansible_connection: ansible.netcommon.network_cli
 ansible_network_os: cisco.ios.ios
+ansible_user: "ansible"
 ansible_password: "Cisco123"
 ansible_become: true
 ansible_become_method: enable
@@ -13,6 +14,9 @@ ansible_become_password: "Cisco123"
 ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
 
 # --- Credentials ---
+local_user: "ansible"
+local_user_password: "Cisco123"
+ssh_domain_name: "lab.local"
 enable_secret: "Cisco123"
 vty_password: "Cisco123"
 vtp_password: "Cisco123"
