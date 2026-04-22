@@ -1,0 +1,241 @@
+! ============================================================
+!  TOPOLOGY SUMMARY & ADDRESSING TABLE
+!  Network Lab - Cisco IOS
+! ============================================================
+
+! ============================================================
+!  THIẾT KẾ TỔNG QUAN
+! ============================================================
+!
+!  CÔNG NGHỆ ÁP DỤNG:
+!  - EtherChannel (LACP - mode active) : PO1, PO2, PO3
+!  - HSRP v2                           : CORE-1 Active, CORE-2 Standby
+!  - Trunk (802.1Q)                    : Tất cả uplinks
+!  - VTP                               : CORE-1 và CORE-2 làm Server, AC-1~AC-5 làm Client
+!  - Rapid PVST+                       : Spanning Tree
+!  - OSPF Area 0                       : Routing giữa Router - CORE-1 - CORE-2
+!  - PortFast + BPDU Guard             : Access ports (downlinks)
+!  - DHCP Server                       : Đặt trên Router, CORE forward qua ip helper-address
+!
+! ============================================================
+!  PHÂN VÙNG VLAN
+! ============================================================
+!
+!  VLAN 10  - DATA       : 192.168.10.0/24  (PC1, PC2, PC3)
+!  VLAN 20  - CAMERA     : 192.168.20.0/24  (Cam-1, Cam-2)
+!  VLAN 99  - MANAGEMENT : 192.168.99.0/24  (Switches)
+!  VLAN 100 - NATIVE     : (không đánh IP)
+!
+! ============================================================
+!  BẢNG ĐỊA CHỈ IP
+! ============================================================
+!
+!  --- Router ---
+!  e0/0 (to OPNsense)   : 192.168.9.99/24
+!  PO2  (to CORE-1)     : 10.0.0.1/30
+!  PO3  (to CORE-2)     : 10.0.0.5/30
+!  Default route        : 0.0.0.0/0 -> 192.168.9.100 (OPNsense)
+!
+!  --- OPNsense ---
+!  eth3 (to Router)     : 192.168.9.100/24  (WAN Gateway)
+!
+!  --- CORE-1 ---
+!  PO2  (to Router)     : 10.0.0.2/30
+!  Vlan10 (HSRP Active) : 192.168.10.2/24  | VIP: 192.168.10.1
+!  Vlan20 (HSRP Active) : 192.168.20.2/24  | VIP: 192.168.20.1
+!  Vlan99 (HSRP Active) : 192.168.99.2/24  | VIP: 192.168.99.1
+!  ip helper-address    : 10.0.0.1 (forward DHCP về Router)
+!
+!  --- CORE-2 ---
+!  PO3  (to Router)     : 10.0.0.6/30
+!  Vlan10 (HSRP Standby): 192.168.10.3/24  | VIP: 192.168.10.1
+!  Vlan20 (HSRP Standby): 192.168.20.3/24  | VIP: 192.168.20.1
+!  Vlan99 (HSRP Standby): 192.168.99.3/24  | VIP: 192.168.99.1
+!  ip helper-address    : 10.0.0.5 (forward DHCP về Router)
+!
+!  --- Access Switches (Management SVI Vlan99) ---
+!  AC-1 Vlan99          : 192.168.99.11/24  | GW: 192.168.99.1
+!  AC-2 Vlan99          : 192.168.99.12/24  | GW: 192.168.99.1
+!  AC-3 Vlan99          : 192.168.99.13/24  | GW: 192.168.99.1
+!  AC-4 Vlan99          : 192.168.99.14/24  | GW: 192.168.99.1
+!  AC-5 Vlan99          : 192.168.99.15/24  | GW: 192.168.99.1
+!
+!  --- End Devices (DHCP từ Router - pool bắt đầu từ .21) ---
+!  PC1  (AC-1 e1/0) VLAN 10 : DHCP pool VLAN10_DATA   | GW: 192.168.10.1
+!  PC2  (AC-2 e1/0) VLAN 10 : DHCP pool VLAN10_DATA   | GW: 192.168.10.1
+!  PC3  (AC-3 e1/0) VLAN 10 : DHCP pool VLAN10_DATA   | GW: 192.168.10.1
+!  Cam-1(AC-4 e1/0) VLAN 20 : DHCP pool VLAN20_CAMERA | GW: 192.168.20.1
+!  Cam-2(AC-5 e1/0) VLAN 20 : DHCP pool VLAN20_CAMERA | GW: 192.168.20.1
+!
+! ============================================================
+!  DHCP SERVER (trên Router)
+! ============================================================
+!
+!  Excluded:
+!    192.168.10.1  - 192.168.10.20   (reserved: VIP, gateways, statics)
+!    192.168.20.1  - 192.168.20.20   (reserved)
+!    192.168.99.1  - 192.168.99.20   (reserved)
+!
+!  Pool VLAN10_DATA   : 192.168.10.0/24 | GW: 192.168.10.1 | lease: 1 ngày
+!  Pool VLAN20_CAMERA : 192.168.20.0/24 | GW: 192.168.20.1 | lease: 7 ngày
+!  Pool VLAN99_MGMT   : 192.168.99.0/24 | GW: 192.168.99.1 | lease: 3 ngày
+!  DNS: 8.8.8.8, 8.8.4.4 | domain-name: lab.local
+!
+! ============================================================
+!  ETHERCHANNEL MAP
+! ============================================================
+!
+!  PO1: CORE-1 (e0/2, e0/3) <---> CORE-2 (e0/2, e0/3)  [Trunk - Inter-Core]
+!  PO2: Router  (e0/1, e0/2) <---> CORE-1 (e0/0, e0/1)  [Routed - 10.0.0.0/30]
+!  PO3: Router  (e1/1, e1/2) <---> CORE-2 (e0/0, e0/1)  [Routed - 10.0.0.4/30]
+!
+! ============================================================
+!  UPLINK MAP: CORE -> ACCESS (Dual-home, cross-connected)
+! ============================================================
+!
+!  CORE-1 e1/0  -> AC-1 e0/0  (primary)
+!  CORE-1 e1/1  -> AC-2 e0/0  (primary)
+!  CORE-1 e1/2  -> AC-3 e0/0  (cross)
+!  CORE-1 e1/3  -> AC-4 e0/0  (cross)
+!  CORE-1 e2/0  -> AC-5 e0/0  (cross)
+!
+!  CORE-2 e1/0  -> AC-1 e0/1  (cross)
+!  CORE-2 e1/1  -> AC-2 e0/1  (cross)
+!  CORE-2 e1/2  -> AC-3 e0/1  (cross)
+!  CORE-2 e1/3  -> AC-4 e0/1  (primary)
+!  CORE-2 e2/0  -> AC-5 e0/1  (primary)
+!
+! ============================================================
+!  HSRP v2
+! ============================================================
+!
+!  Group 10 (VLAN 10) : CORE-1 Priority 110 (Active)  | CORE-2 Priority 90 (Standby)
+!  Group 20 (VLAN 20) : CORE-1 Priority 110 (Active)  | CORE-2 Priority 90 (Standby)
+!  Group 99 (VLAN 99) : CORE-1 Priority 110 (Active)  | CORE-2 Priority 90 (Standby)
+!  VIP Gateway        : .1 của mỗi subnet tương ứng
+!  Auth               : md5 key-string Cisco123
+!  Preempt            : Bật trên cả CORE-1 và CORE-2
+!
+! ============================================================
+!  VTP
+! ============================================================
+!
+!  Domain    : LAB
+!  Password  : Cisco123
+!  CORE-1    : Server (tạo VLAN)
+!  CORE-2    : Server (sync với CORE-1)
+!  AC-1~AC-5 : Client (nhận VLAN từ CORE)
+!
+! ============================================================
+!  SPANNING TREE (Rapid-PVST+)
+! ============================================================
+!
+!  Root Bridge VLAN 10,20,99 : CORE-1 (priority 4096)
+!  Root Bridge VLAN 100      : CORE-2 (priority 4096)
+!  Secondary   VLAN 10,20,99 : CORE-2 (priority 8192)
+!  Secondary   VLAN 100      : CORE-1 (priority 8192)
+!  PortFast + BPDU Guard     : Bật trên tất cả access downlinks (e1/0 các AC)
+!  PortFast Trunk            : Bật trên uplinks CORE -> Access
+!
+! ============================================================
+!  OSPF
+! ============================================================
+!
+!  Process ID : 1
+!  Area       : 0
+!  Router-ID  :
+!    Router  -> 1.1.1.1  | Networks: 10.0.0.0/30, 10.0.0.4/30 | default-information originate
+!    CORE-1  -> 2.2.2.2  | Networks: 10.0.0.0/30, 192.168.10/20/99.0/24
+!    CORE-2  -> 3.3.3.3  | Networks: 10.0.0.4/30, 192.168.10/20/99.0/24
+!
+! ============================================================
+!  CREDENTIALS
+! ============================================================
+!
+!  enable secret        : Cisco123
+!  VTY password         : Cisco123  (telnet/ssh)
+!  VTP password         : Cisco123
+!  HSRP auth key (md5)  : Cisco123
+!  service password-encryption: Bật trên tất cả thiết bị
+!
+! ============================================================
+!  FILE INDEX
+! ============================================================
+!
+!  00_SUMMARY.txt -> Tổng quan topology, bảng địa chỉ, mapping cổng
+!  Router.txt     -> Cấu hình Router (uplink OPNsense, PO2/PO3, OSPF, DHCP Server)
+!  CORE-1.txt     -> Cấu hình CORE-1 (HSRP Active, VTP Server, STP Root VLAN10/20/99)
+!  CORE-2.txt     -> Cấu hình CORE-2 (HSRP Standby, VTP Server, STP Root VLAN100)
+!  AC-1.txt       -> Access switch AC-1 (PC1  - VLAN 10, uplink CORE-1 e1/0 / CORE-2 e1/0)
+!  AC-2.txt       -> Access switch AC-2 (PC2  - VLAN 10, uplink CORE-1 e1/1 / CORE-2 e1/1)
+!  AC-3.txt       -> Access switch AC-3 (PC3  - VLAN 10, uplink CORE-1 e1/2 / CORE-2 e1/2)
+!  AC-4.txt       -> Access switch AC-4 (Cam-1 - VLAN 20, uplink CORE-1 e1/3 / CORE-2 e1/3)
+!  AC-5.txt       -> Access switch AC-5 (Cam-2 - VLAN 20, uplink CORE-1 e2/0 / CORE-2 e2/0)
+!
+! ============================================================
+!  ANSIBLE INVENTORY & CONNECTIVITY
+! ============================================================
+!
+!  Ansible Server kết nối đến tất cả thiết bị qua VLAN 99 (Management)
+!  hoặc qua IP routed (với Router).
+!
+!  Giao thức   : SSH (hoặc Telnet fallback)
+!  Username    : (không cấu hình local user - dùng VTY password)
+!  Password    : Cisco123
+!  Enable pass : Cisco123
+!  Ansible collection: cisco.ios
+!
+!  --- Bảng IP Ansible kết nối ---
+!
+!  Thiết bị   Hostname   ansible_host        ansible_network_os  Ghi chú
+!  ---------  ---------  ------------------  ------------------  --------------------------------
+!  Router     Router     192.168.9.99        cisco.ios.ios       e0/0 (link OPNsense)
+!                        (hoặc 10.0.0.1)                         PO2 - dự phòng qua CORE-1
+!  CORE-1     CORE-1     192.168.99.2        cisco.ios.ios       SVI Vlan99 (Management)
+!  CORE-2     CORE-2     192.168.99.3        cisco.ios.ios       SVI Vlan99 (Management)
+!  AC-1       AC-1       192.168.99.11       cisco.ios.ios       SVI Vlan99 (Management)
+!  AC-2       AC-2       192.168.99.12       cisco.ios.ios       SVI Vlan99 (Management)
+!  AC-3       AC-3       192.168.99.13       cisco.ios.ios       SVI Vlan99 (Management)
+!  AC-4       AC-4       192.168.99.14       cisco.ios.ios       SVI Vlan99 (Management)
+!  AC-5       AC-5       192.168.99.15       cisco.ios.ios       SVI Vlan99 (Management)
+!
+!  --- Ansible Inventory mẫu (hosts.ini) ---
+!
+!  [all:vars]
+!  ansible_connection=network_cli
+!  ansible_network_os=cisco.ios.ios
+!  ansible_user=                          ; để trống nếu không có local user
+!  ansible_password=Cisco123
+!  ansible_become=yes
+!  ansible_become_method=enable
+!  ansible_become_password=Cisco123
+!  ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+!
+!  [routers]
+!  Router  ansible_host=192.168.9.99
+!
+!  [core]
+!  CORE-1  ansible_host=192.168.99.2
+!  CORE-2  ansible_host=192.168.99.3
+!
+!  [access]
+!  AC-1    ansible_host=192.168.99.11
+!  AC-2    ansible_host=192.168.99.12
+!  AC-3    ansible_host=192.168.99.13
+!  AC-4    ansible_host=192.168.99.14
+!  AC-5    ansible_host=192.168.99.15
+!
+!  [network:children]
+!  routers
+!  core
+!  access
+!
+!  --- Lưu ý kết nối ---
+!  * Ansible Server phải nằm trong VLAN 99 (192.168.99.0/24) hoặc
+!    được route tới VLAN 99 để ping/SSH đến các SVI switch.
+!  * Với Router: nếu Ansible Server trong VLAN 99, dùng IP 10.0.0.1 (PO2)
+!    vì Router không có SVI VLAN 99, cần đảm bảo OSPF advertise route.
+!  * Các switch AC chỉ có ip default-gateway 192.168.99.1 (VIP HSRP),
+!    không chạy OSPF - đảm bảo Ansible cùng subnet hoặc route qua CORE.
+!  * SSH transport đã bật trên tất cả: transport input telnet ssh
+! ============================================================

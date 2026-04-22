@@ -11,7 +11,7 @@ ansible_password: "Cisco123"
 ansible_become: true
 ansible_become_method: enable
 ansible_become_password: "Cisco123"
-ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o KexAlgorithms=+diffie-hellman-group14-sha1 -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa"
 
 # --- Credentials ---
 local_user: "ansible"

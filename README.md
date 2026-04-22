@@ -1,5 +1,7 @@
 # Dự án Tự động hóa Mạng Cisco với Ansible (Cisco Network Automation)
 
+![Sơ đồ mạng](./config-all/Sơ%20Đồ.png)
+
 ## Tổng quan
 Dự án triển khai tự động hóa cấu hình hạ tầng mạng Cisco (gồm 1 Router, 2 Core Switches L3, 5 Access Switches L2) từ trạng thái **thiết bị trắng** (blank config) cho đến khi **hoàn thiện 100%**, được chia thành 2 giai đoạn thực thi:
 1. **Phần 1 - Bootstrap**: Cấu hình cơ sở thủ công (thông qua Console) để thiết lập kết nối IP và SSH, làm tiền đề cho hệ thống điều khiển.
@@ -80,16 +82,17 @@ exec $SHELL -l
 
 # 3. Tải bộ module chuẩn của Cisco cho Ansible
 ansible-galaxy collection install cisco.ios ansible.netcommon
+
+# 4. Tạo virtual env (best practice cho Ansible)
+sudo apt update
+sudo apt install python3-paramiko -y
 ```
 
 ### Bước 2: Lấy dự án về (Clone Repository)
 Tải mã nguồn tại thư mục người dùng:
 
 ```bash
-mkdir -p ~/automation
-cd ~/automation
 git clone https://github.com/Vietquys/network_automation.git
-cd network_automation
 ```
 
 ### Bước 3: Bootstap cấu hình lên thiết bị thật
@@ -101,7 +104,7 @@ cd network_automation
 > **QUAN TRỌNG:** Luôn phải di chuyển (cd) vào thư mục `ansible-network` trước khi gõ lệnh liên quan tới Ansible để Ansible đọc đúng file cấu hình `ansible.cfg` khu vực.
 
 ```bash
-cd ~/automation/network_automation/ansible-network
+cd ~/network_automation/ansible-network
 
 # 1. Kiểm tra Ansible đọc danh sách thiết bị thành công chưa
 ansible-inventory -i inventory.ini --graph

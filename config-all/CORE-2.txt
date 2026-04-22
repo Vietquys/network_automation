@@ -1,0 +1,221 @@
+! ============================================================
+!  CORE-2 - Core Layer 3 Switch (HSRP STANDBY)
+!  Interfaces:
+!    e0/0, e0/1 -> PO3 (EtherChannel to Router)
+!    e0/2, e0/3 -> PO1 (EtherChannel to CORE-1)
+!    e1/0       -> AC-1 (e0/1) uplink (cross)
+!    e1/1       -> AC-2 (e0/1) uplink (cross)
+!    e1/2       -> AC-3 (e0/1) uplink (cross)
+!    e1/3       -> AC-4 (e0/1) uplink (primary)
+!    e2/0       -> AC-5 (e0/1) uplink (primary)
+! ============================================================
+
+hostname CORE-2
+!
+no ip domain-lookup
+ip routing
+!
+! ============================================================
+!  VTP Configuration
+! ============================================================
+vtp mode server
+vtp domain LAB
+vtp password Cisco123
+!
+! ============================================================
+!  VLAN Database (sync từ VTP với CORE-1)
+! ============================================================
+vlan 10
+ name DATA
+vlan 20
+ name CAMERA
+vlan 99
+ name MANAGEMENT
+vlan 100
+ name NATIVE
+!
+! ============================================================
+!  EtherChannel PO3 -> Router (Uplink/Routed)
+! ============================================================
+interface range Ethernet0/0 - 1
+ description "Member of PO3 -> Router"
+ no switchport
+ no ip address
+ channel-group 3 mode active
+ no shutdown
+!
+interface Port-channel3
+ description "PO3 EtherChannel to Router"
+ no switchport
+ ip address 10.0.0.6 255.255.255.252
+ no shutdown
+!
+! ============================================================
+!  EtherChannel PO1 -> CORE-1 (Inter-Core Link, Trunk)
+! ============================================================
+interface range Ethernet0/2 - 3
+ description "Member of PO1 -> CORE-1"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 100
+ switchport trunk allowed vlan 10,20,99,100
+ channel-group 1 mode active
+ no shutdown
+!
+interface Port-channel1
+ description "PO1 EtherChannel to CORE-1"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 100
+ switchport trunk allowed vlan 10,20,99,100
+ no shutdown
+!
+! ============================================================
+!  Uplinks to Access Layer (Trunk)
+!  CORE-2 e1/0 -> AC-1 (e0/1) cross
+!  CORE-2 e1/1 -> AC-2 (e0/1) cross
+!  CORE-2 e1/2 -> AC-3 (e0/1) cross
+!  CORE-2 e1/3 -> AC-4 (e0/1) primary
+!  CORE-2 e2/0 -> AC-5 (e0/1) primary
+! ============================================================
+interface Ethernet1/0
+ description "Trunk to AC-1 (e0/1) cross"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 100
+ switchport trunk allowed vlan 10,20,99,100
+ spanning-tree portfast trunk
+ no shutdown
+!
+interface Ethernet1/1
+ description "Trunk to AC-2 (e0/1) cross"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 100
+ switchport trunk allowed vlan 10,20,99,100
+ spanning-tree portfast trunk
+ no shutdown
+!
+interface Ethernet1/2
+ description "Trunk to AC-3 (e0/1) cross"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 100
+ switchport trunk allowed vlan 10,20,99,100
+ spanning-tree portfast trunk
+ no shutdown
+!
+interface Ethernet1/3
+ description "Trunk to AC-4 (e0/1)"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 100
+ switchport trunk allowed vlan 10,20,99,100
+ spanning-tree portfast trunk
+ no shutdown
+!
+interface Ethernet2/0
+ description "Trunk to AC-5 (e0/1)"
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 100
+ switchport trunk allowed vlan 10,20,99,100
+ spanning-tree portfast trunk
+ no shutdown
+!
+! ============================================================
+!  SVI - Layer 3 Gateway + HSRP (CORE-2 = STANDBY)
+! ============================================================
+interface Vlan10
+ description "DATA VLAN Gateway"
+ ip address 192.168.10.3 255.255.255.0
+ ip helper-address 10.0.0.5
+ standby version 2
+ standby 10 ip 192.168.10.1
+ standby 10 priority 90
+ standby 10 preempt
+ standby 10 authentication md5 key-string Cisco123
+ no shutdown
+!
+interface Vlan20
+ description "CAMERA VLAN Gateway"
+ ip address 192.168.20.3 255.255.255.0
+ ip helper-address 10.0.0.5
+ standby version 2
+ standby 20 ip 192.168.20.1
+ standby 20 priority 90
+ standby 20 preempt
+ standby 20 authentication md5 key-string Cisco123
+ no shutdown
+!
+interface Vlan99
+ description "MANAGEMENT VLAN"
+ ip address 192.168.99.3 255.255.255.0
+ ip helper-address 10.0.0.5
+ standby version 2
+ standby 99 ip 192.168.99.1
+ standby 99 priority 90
+ standby 99 preempt
+ standby 99 authentication md5 key-string Cisco123
+ no shutdown
+!
+! ============================================================
+!  Spanning Tree - CORE-2 là Secondary Root Bridge
+! ============================================================
+spanning-tree mode rapid-pvst
+spanning-tree vlan 10,20,99 priority 8192
+spanning-tree vlan 100 priority 4096
+!
+! ============================================================
+!  OSPF
+! ============================================================
+router ospf 1
+ router-id 3.3.3.3
+ network 10.0.0.4 0.0.0.3 area 0
+ network 192.168.10.0 0.0.0.255 area 0
+ network 192.168.20.0 0.0.0.255 area 0
+ network 192.168.99.0 0.0.0.255 area 0
+!
+! ============================================================
+!  Management
+! ============================================================
+line con 0
+ logging synchronous
+ exec-timeout 0 0
+line vty 0 4
+ password Cisco123
+ login
+ transport input telnet ssh
+!
+enable secret Cisco123
+service password-encryption
+!
+! ============================================================
+!  SNMP - Gửi Trap về Zabbix Server (192.168.6.101)
+! ============================================================
+snmp-server community LabReadOnly RO
+snmp-server community LabReadWrite RW
+snmp-server contact admin@lab.local
+snmp-server location Server-Room
+snmp-server chassis-id CORE-2
+!
+access-list 10 permit 192.168.6.101
+snmp-server community LabReadOnly RO 10
+!
+snmp-server enable traps
+snmp-server host 192.168.6.101 version 2c LabReadOnly
+!
+snmp-server enable traps snmp authentication linkdown linkup coldstart warmstart
+snmp-server enable traps ospf state-change
+snmp-server enable traps ospf errors
+snmp-server enable traps hsrp
+snmp-server enable traps vtp
+snmp-server enable traps vlancreate
+snmp-server enable traps vlandelete
+snmp-server enable traps config
+snmp-server enable traps cpu threshold
+snmp-server enable traps envmon
+snmp-server enable traps port-security
+snmp-server enable traps stpx inconsistency
+!
+end

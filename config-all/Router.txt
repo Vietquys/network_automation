@@ -1,0 +1,162 @@
+! ============================================================
+!  ROUTER - Gateway / Uplink to OPNsense (eth3)
+!  Interfaces:
+!    e0/0 -> OPNsense (eth3)
+!    e0/1 -> PO2 (EtherChannel to CORE-1)
+!    e0/2 -> PO2 (EtherChannel to CORE-1)  [member]
+!    e1/1 -> PO3 (EtherChannel to CORE-2)
+!    e1/2 -> PO3 (EtherChannel to CORE-2)  [member]
+! ============================================================
+enable
+config terminal
+!
+hostname Router
+!
+no ip domain-lookup
+!
+! --- Uplink to OPNsense (WAN/Firewall) ---
+interface Ethernet0/0
+ description "Uplink to OPNsense eth3"
+ ip address 192.168.9.99 255.255.255.0
+ no shutdown
+!
+! --- Default route to OPNsense ---
+ip route 0.0.0.0 0.0.0.0 192.168.9.100
+!
+! ============================================================
+!  EtherChannel PO2 -> CORE-1
+! ============================================================
+interface range Ethernet0/1 - 2
+ description "Member of PO2 -> CORE-1"
+ no ip address
+ channel-group 2 mode active
+ no shutdown
+!
+interface Port-channel2
+ description "PO2 EtherChannel to CORE-1"
+ ip address 10.0.0.1 255.255.255.252
+ no shutdown
+!
+! ============================================================
+!  EtherChannel PO3 -> CORE-2
+! ============================================================
+interface range Ethernet1/1 - 2
+ description "Member of PO3 -> CORE-2"
+ no ip address
+ channel-group 3 mode active
+ no shutdown
+!
+interface Port-channel3
+ description "PO3 EtherChannel to CORE-2"
+ ip address 10.0.0.5 255.255.255.252
+ no shutdown
+!
+! ============================================================
+!  Routing (OSPF hoặc Static tùy thiết kế)
+! ============================================================
+router ospf 1
+ router-id 1.1.1.1
+ network 10.0.0.0 0.0.0.3 area 0
+ network 10.0.0.4 0.0.0.3 area 0
+ default-information originate
+!
+! ============================================================
+!  DHCP SERVER - Cấp phát IP cho các VLAN
+!
+!  Lưu ý: Vì Router không kết nối trực tiếp đến các VLAN,
+!  cần cấu hình "ip helper-address" trên SVI của CORE-1/CORE-2
+!  để forward DHCP request từ client về Router (10.0.0.1).
+!
+!  Trên CORE-1 và CORE-2, thêm vào từng SVI:
+!    interface Vlan10
+!     ip helper-address 10.0.0.1
+!    interface Vlan20
+!     ip helper-address 10.0.0.1
+!    interface Vlan99
+!     ip helper-address 10.0.0.1
+! ============================================================
+ 
+! --- Loại trừ địa chỉ IP tĩnh (gateway, switch management, v.v.) ---
+ip dhcp excluded-address 192.168.10.1 192.168.10.20
+ip dhcp excluded-address 192.168.20.1 192.168.20.20
+ip dhcp excluded-address 192.168.99.1 192.168.99.20
+!
+! ============================================================
+!  DHCP Pool - VLAN 10 (DATA) -> PC1, PC2, PC3
+! ============================================================
+ip dhcp pool VLAN10_DATA
+ network 192.168.10.0 255.255.255.0
+ default-router 192.168.10.1
+ dns-server 8.8.8.8 8.8.4.4
+ domain-name lab.local
+ lease 1
+!
+! ============================================================
+!  DHCP Pool - VLAN 20 (CAMERA) -> Cam-1, Cam-2
+! ============================================================
+ip dhcp pool VLAN20_CAMERA
+ network 192.168.20.0 255.255.255.0
+ default-router 192.168.20.1
+ dns-server 8.8.8.8 8.8.4.4
+ domain-name lab.local
+ lease 7
+!
+! ============================================================
+!  DHCP Pool - VLAN 99 (MANAGEMENT) -> Switches
+! ============================================================
+ip dhcp pool VLAN99_MGMT
+ network 192.168.99.0 255.255.255.0
+ default-router 192.168.99.1
+ dns-server 8.8.8.8 8.8.4.4
+ domain-name lab.local
+ lease 3
+!
+! ============================================================
+!  Management
+! ============================================================
+line con 0
+ logging synchronous
+ exec-timeout 0 0
+line vty 0 4
+ password Cisco123
+ login
+ transport input telnet ssh
+!
+enable secret Cisco123
+service password-encryption
+!
+! ============================================================
+!  SNMPv2c - Gửi Trap & Cho phép Zabbix Server (192.168.6.101)
+! ============================================================
+! Tạo Access-list giới hạn chỉ Zabbix mới được phép poll SNMP
+access-list 10 permit 192.168.6.101
+!
+! Khai báo Community String và áp dụng Access-list 10
+snmp-server community LabReadOnly RO 10
+!
+! (Tùy chọn) Nếu bạn không dùng quyền Write thì nên xóa dòng RW đi cho an toàn
+! snmp-server community LabReadWrite RW
+!
+snmp-server contact admin@lab.local
+snmp-server location Server-Room
+snmp-server chassis-id Router
+!
+! Cấu hình gửi Trap về Zabbix
+snmp-server enable traps
+snmp-server host 192.168.6.101 version 2c LabReadOnly
+!
+! Bật các loại Trap cụ thể
+snmp-server enable traps snmp authentication linkdown linkup coldstart warmstart
+snmp-server enable traps ospf state-change
+snmp-server enable traps ospf errors
+snmp-server enable traps hsrp
+snmp-server enable traps vtp
+snmp-server enable traps vlancreate
+snmp-server enable traps vlandelete
+snmp-server enable traps config
+snmp-server enable traps cpu threshold
+snmp-server enable traps envmon
+snmp-server enable traps port-security
+snmp-server enable traps stpx inconsistency
+!
+end

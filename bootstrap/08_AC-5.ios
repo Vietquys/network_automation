@@ -9,6 +9,7 @@ hostname AC-5
 !
 no ip domain-lookup
 ip domain-name lab.local
+no ip routing
 !
 enable secret Cisco123
 service password-encryption
