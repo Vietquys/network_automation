@@ -10,7 +10,7 @@ hostname CORE-1
 !
 no ip domain-lookup
 ip domain-name lab.local
-no ip routing
+ip routing
 !
 ! --- Enable Secret ---
 enable secret Cisco123
