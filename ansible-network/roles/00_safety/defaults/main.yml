@@ -1,0 +1,45 @@
+---
+- name: "SAFETY | Tạo thư mục backup trên control node"
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/{{ safety_backup_dir }}"
+    state: directory
+    mode: "0750"
+  delegate_to: localhost
+
+- name: "SAFETY | Thu thập trạng thái interface VLAN management"
+  cisco.ios.ios_command:
+    commands:
+      - "show ip interface brief | include Vlan{{ safety_mgmt_vlan_id }}"
+  register: safety_mgmt_vlan_state
+  changed_when: false
+
+- name: "SAFETY | Guardrail - Vlan management phải tồn tại trước khi apply"
+  ansible.builtin.assert:
+    that:
+      - not safety_require_mgmt_vlan or (safety_mgmt_vlan_state.stdout[0] | trim
+        | length > 0)
+    fail_msg: "Không tìm thấy Vlan{{ safety_mgmt_vlan_id }} trên {{
+      inventory_hostname }}. Dừng để tránh mất management access."
+
+- name: "SAFETY | Kiểm tra SSH transport của Ansible tới thiết bị"
+  cisco.ios.ios_command:
+    commands:
+      - "show clock"
+  register: safety_transport_check
+  changed_when: false
+  when: safety_require_reachable_transport
+
+- name: "SAFETY | Backup running-config trước khi thay đổi"
+  cisco.ios.ios_command:
+    commands:
+      - "show running-config"
+  register: safety_running_config
+  changed_when: false
+
+- name: "SAFETY | Lưu backup running-config về control node"
+  ansible.builtin.copy:
+    content: "{{ safety_running_config.stdout[0] }}\n"
+    dest: "{{ playbook_dir }}/{{ safety_backup_dir }}/{{ inventory_hostname
+      }}-running-config.prechange.cfg"
+    mode: "0600"
+  delegate_to: localhost

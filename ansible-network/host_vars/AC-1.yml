@@ -15,3 +15,7 @@ downlink_interfaces:
   - interface: "Ethernet1/0"
     description: "Access to PC1"
     vlan: 10
+
+# Bảo vệ cổng đang cắm Ansible server / jump host để tránh đổi VLAN gây mất SSH.
+protected_mgmt_interfaces:
+  - "Ethernet1/0"

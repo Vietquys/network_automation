@@ -11,7 +11,9 @@ ansible_password: "Cisco123"
 ansible_become: true
 ansible_become_method: enable
 ansible_become_password: "Cisco123"
-ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o KexAlgorithms=+diffie-hellman-group14-sha1 -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa"
+ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o
+  UserKnownHostsFile=/dev/null -o KexAlgorithms=+diffie-hellman-group14-sha1 -o
+  HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa"
 
 # --- Credentials ---
 local_user: "ansible"
@@ -53,3 +55,11 @@ snmp_traps_common:
   - "config"
   - "port-security"
   - "stpx inconsistency"
+
+# --- Safety / guardrails ---
+# Chỉ remove IP bootstrap khi explicitly bật biến này.
+etherchannel_remove_bootstrap_ips: false
+
+# Danh sách interface cần bảo vệ (không bị role access_ports đổi VLAN) theo host_vars.
+protected_mgmt_interfaces: []
+allow_reconfigure_protected_mgmt_interfaces: false

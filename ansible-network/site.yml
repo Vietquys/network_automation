@@ -18,12 +18,24 @@
 # ============================================================
 ---
 # ============================================================
+#  PLAY 0: Safety precheck + backup (không thay đổi dataplane)
+# ============================================================
+- name: "PLAY 0 | Safety precheck và backup running-config"
+  hosts: network
+  gather_facts: false
+  serial: 1
+  tags: [ safety, precheck, backup, always ]
+  roles:
+    - role: 00_safety
+
+# ============================================================
 #  PLAY 1: Base config - TẤT CẢ thiết bị
 # ============================================================
 - name: "PLAY 1 | Cấu hình cơ bản trên tất cả thiết bị"
   hosts: network
   gather_facts: false
-  tags: [base, always]
+  serial: 2
+  tags: [ base, always ]
   roles:
     - role: 01_base
 
@@ -33,7 +45,8 @@
 - name: "PLAY 2 | Cấu hình VTP Server + VLAN trên CORE"
   hosts: core
   gather_facts: false
-  tags: [vtp, vlan]
+  serial: 1
+  tags: [ vtp, vlan ]
   roles:
     - role: 02_vtp
     - role: 03_vlan
@@ -44,6 +57,7 @@
 - name: "PLAY 3 | Cấu hình VTP Client trên Access"
   hosts: access
   gather_facts: false
+  serial: 2
   roles:
     - role: 02_vtp
 
@@ -54,7 +68,7 @@
 - name: "PLAY 4 | Cấu hình EtherChannel (LACP) trên Router + CORE"
   hosts: routers:core
   gather_facts: false
-  serial: 1
+  serial: 2
   roles:
     - role: 05_etherchannel
 
@@ -64,6 +78,7 @@
 - name: "PLAY 5 | Cấu hình Trunk ports trên CORE + Access"
   hosts: core:access
   gather_facts: false
+  serial: 1
   roles:
     - role: 04_trunk
 
@@ -73,6 +88,7 @@
 - name: "PLAY 6 | Cấu hình Spanning Tree trên CORE + Access"
   hosts: core:access
   gather_facts: false
+  serial: 1
   roles:
     - role: 06_stp
 
@@ -82,6 +98,7 @@
 - name: "PLAY 7 | Cấu hình SVI + HSRP v2 trên CORE"
   hosts: core
   gather_facts: false
+  serial: 1
   roles:
     - role: 07_svi_hsrp
 
@@ -91,6 +108,7 @@
 - name: "PLAY 8 | Cấu hình SVI + Default Gateway trên Access"
   hosts: access
   gather_facts: false
+  serial: 1
   roles:
     - role: 07_svi_hsrp
 
@@ -100,6 +118,7 @@
 - name: "PLAY 9 | Cấu hình OSPF Area 0 trên Router + CORE"
   hosts: routers:core
   gather_facts: false
+  serial: 1
   roles:
     - role: 08_ospf
 
@@ -109,6 +128,7 @@
 - name: "PLAY 10 | Cấu hình DHCP Server trên Router"
   hosts: routers
   gather_facts: false
+  serial: 1
   roles:
     - role: 09_dhcp
 
@@ -118,6 +138,7 @@
 - name: "PLAY 11 | Cấu hình Access Ports (downlinks)"
   hosts: access
   gather_facts: false
+  serial: 1
   roles:
     - role: 10_access_ports
 
@@ -127,5 +148,6 @@
 - name: "PLAY 12 | Cấu hình SNMP Traps cho Zabbix"
   hosts: network
   gather_facts: false
+  serial: 2
   roles:
     - role: 11_snmp

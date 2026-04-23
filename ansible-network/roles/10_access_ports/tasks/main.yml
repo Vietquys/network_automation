@@ -8,8 +8,34 @@
 #  - AC-4/5:   e1/0 → VLAN 20 (CAMERA) cho Cam-1/Cam-2
 #  - PortFast: Bật trên tất cả access ports → skip STP learning
 #  - BPDU Guard: Bảo vệ khỏi rogue switch cắm vào access port
+#
+#  Guardrails:
+#  - Mặc định KHÔNG đụng vào interface được đánh dấu management.
+#  - Muốn ép cấu hình vào các cổng protected phải bật
+#    allow_reconfigure_protected_mgmt_interfaces=true.
 # ============================================================
 ---
+- name: "ACCESS_PORTS | Guardrail - chặn đổi VLAN trên cổng management protected"
+  ansible.builtin.assert:
+    that:
+      - allow_reconfigure_protected_mgmt_interfaces | bool or
+        ((downlink_interfaces | default([]) | map(attribute='interface') | list)
+        | intersect(protected_mgmt_interfaces | default([])) | length == 0)
+    fail_msg: >-
+      Phát hiện cổng protected nằm trong downlink_interfaces trên {{
+      inventory_hostname }}: {{ (downlink_interfaces | default([]) |
+      map(attribute='interface') | list) | intersect(protected_mgmt_interfaces |
+      default([])) }}. Dừng play để tránh mất management access.
+
+- name: "ACCESS_PORTS | Tính danh sách cổng được phép cấu hình"
+  ansible.builtin.set_fact:
+    safe_downlink_interfaces: >-
+      {{
+        downlink_interfaces | default([])
+        if allow_reconfigure_protected_mgmt_interfaces | bool
+        else (downlink_interfaces | default([]) | rejectattr('interface', 'in', protected_mgmt_interfaces | default([])) | list)
+      }}
+
 - name: "ACCESS_PORTS | Cấu hình downlink access ports"
   cisco.ios.ios_config:
     lines:
@@ -20,8 +46,8 @@
       - "spanning-tree bpduguard enable"
       - "no shutdown"
     parents: "interface {{ item.interface }}"
-  loop: "{{ downlink_interfaces }}"
-  when: downlink_interfaces is defined
+  loop: "{{ safe_downlink_interfaces }}"
+  when: safe_downlink_interfaces | length > 0
 
 - name: "ACCESS_PORTS | Lưu cấu hình"
   cisco.ios.ios_config:

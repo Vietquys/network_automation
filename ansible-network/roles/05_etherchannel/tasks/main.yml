@@ -67,13 +67,32 @@
   loop: "{{ etherchannels | selectattr('type', 'equalto', 'trunk') | list }}"
   when: etherchannels is defined
 
-# === Xóa static route tạm (bootstrap) trên CORE ===
+# === Safety check: xác nhận Port-channel đã lên trước khi chạm bootstrap IP ===
+- name: "ETHERCHANNEL | Kiểm tra trạng thái Port-channel"
+  cisco.ios.ios_command:
+    commands:
+      - "show etherchannel summary"
+  register: etherchannel_summary
+  changed_when: false
+
+- name: "ETHERCHANNEL | Guardrail - không remove bootstrap IP nếu Port-channel
+    chưa hoạt động"
+  ansible.builtin.assert:
+    that:
+      - "'Po' in etherchannel_summary.stdout[0]"
+    fail_msg: "Port-channel chưa thấy trạng thái hoạt động trên {{
+      inventory_hostname }}. Dừng để tránh mất kết nối quản trị."
+  when: etherchannel_remove_bootstrap_ips | bool
+
+# === Xóa static route tạm (bootstrap) khi được bật rõ ràng ===
 - name: "ETHERCHANNEL | Xóa IP standalone bootstrap trên CORE e0/0"
   cisco.ios.ios_config:
     lines:
       - "no ip address"
     parents: "interface Ethernet0/0"
-  when: "'core' in group_names"
+  when:
+    - "'core' in group_names"
+    - etherchannel_remove_bootstrap_ips | bool
 
 # === Xóa IP standalone bootstrap trên Router ===
 - name: "ETHERCHANNEL | Xóa IP standalone bootstrap trên Router e0/1"
@@ -81,15 +100,18 @@
     lines:
       - "no ip address"
     parents: "interface Ethernet0/1"
-  when: "'routers' in group_names"
+  when:
+    - "'routers' in group_names"
+    - etherchannel_remove_bootstrap_ips | bool
 
 - name: "ETHERCHANNEL | Xóa IP standalone bootstrap trên Router e1/1"
   cisco.ios.ios_config:
     lines:
       - "no ip address"
     parents: "interface Ethernet1/1"
-  when: "'routers' in group_names"
-
+  when:
+    - "'routers' in group_names"
+    - etherchannel_remove_bootstrap_ips | bool
 - name: "ETHERCHANNEL | Lưu cấu hình"
   cisco.ios.ios_config:
     save_when: modified
