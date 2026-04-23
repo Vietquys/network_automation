@@ -1,8 +1,8 @@
 # ============================================================
 #  Host Variables - Router
 # ============================================================
-hostname: "Router"
-snmp_chassis_id: "Router"
+hostname: "router"
+snmp_chassis_id: "router"
 
 # --- Interfaces ---
 wan_interface:

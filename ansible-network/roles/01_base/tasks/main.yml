@@ -1,59 +1,18 @@
-# ============================================================
-#  Role: 01_base
-#  Mục đích: Cấu hình cơ bản (hostname, credentials, console)
-#  Áp dụng: ALL devices
-# ============================================================
 ---
-- name: "BASE | Cấu hình hostname"
-  cisco.ios.ios_config:
-    lines:
-      - "hostname {{ hostname }}"
+- name: "BASE | Kiểm tra biến đầu vào"
+  ansible.builtin.import_tasks: validate.yml
 
-- name: "BASE | Tắt DNS lookup"
-  cisco.ios.ios_config:
-    lines:
-      - "no ip domain-lookup"
+- name: "BASE | Chuẩn hóa system"
+  ansible.builtin.import_tasks: system.yml
 
-- name: "BASE | Cấu hình domain cho SSH"
-  cisco.ios.ios_config:
-    lines:
-      - "ip domain-name {{ ssh_domain_name }}"
+- name: "BASE | Cấu hình Static Routes"
+  ansible.builtin.import_tasks: routing.yml
 
-- name: "BASE | Bật service password-encryption"
-  cisco.ios.ios_config:
-    lines:
-      - "service password-encryption"
+- name: "BASE | Chuẩn hóa local users"
+  ansible.builtin.import_tasks: users.yml
 
-- name: "BASE | Cấu hình enable secret"
-  cisco.ios.ios_config:
-    lines:
-      - "enable secret {{ enable_secret }}"
+- name: "BASE | Chuẩn hóa SSH và line access"
+  ansible.builtin.import_tasks: access.yml
 
-- name: "BASE | Tạo local user cho SSH"
-  cisco.ios.ios_config:
-    lines:
-      - "username {{ local_user }} privilege 15 secret {{ local_user_password }}"
-
-- name: "BASE | Bật SSH version 2"
-  cisco.ios.ios_config:
-    lines:
-      - "ip ssh version 2"
-      - "ip ssh authentication-retries 3"
-
-- name: "BASE | Cấu hình line console"
-  cisco.ios.ios_config:
-    lines:
-      - "logging synchronous"
-      - "exec-timeout 0 0"
-    parents: "line con 0"
-
-- name: "BASE | Cấu hình line VTY 0 4"
-  cisco.ios.ios_config:
-    lines:
-      - "login local"
-      - "transport input ssh"
-    parents: "line vty 0 4"
-
-- name: "BASE | Lưu cấu hình"
-  cisco.ios.ios_config:
-    save_when: modified
+- name: "BASE | Lưu cấu hình khi có thay đổi"
+  ansible.builtin.import_tasks: save.yml

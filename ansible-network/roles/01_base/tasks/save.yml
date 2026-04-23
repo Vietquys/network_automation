@@ -1,0 +1,4 @@
+---
+- name: "BASE | Lưu cấu hình"
+  cisco.ios.ios_config:
+    save_when: modified

@@ -67,25 +67,33 @@ network_automation/
 
 ## HƯỚNG DẪN TRIỂN KHAI VÀ CHẠY DỰ ÁN (Walkthrough)
 
-### Bước 1: Chuẩn bị máy chủ Ansible (Ubuntu Server)
+### Bước 1: Cài đặt môi trường hệ thống
 *Đảm bảo bạn có kết nối Internet để tải các công cụ cần thiết.*
 
 ```bash
 # 1. Cài đặt các gói hệ thống
-sudo apt update
-sudo apt install -y git python3 python3-pip pipx sshpass
+sudo apt update && sudo apt upgrade -y
 
-# 2. Cài đặt Ansible qua pipx
-pipx install --include-deps ansible
-pipx ensurepath
-exec $SHELL -l
+sudo apt install -y \
+  git \
+  python3 \
+  python3-pip \
+  python3-venv \
+  sshpass \
+  openssh-client \
+  rsync
 
-# 3. Tải bộ module chuẩn của Cisco cho Ansible
-ansible-galaxy collection install cisco.ios ansible.netcommon
+# 2. Cài đặt Ansible
+sudo apt install -y ansible
 
-# 4. Tạo virtual env (best practice cho Ansible)
-sudo apt update
-sudo apt install python3-paramiko -y
+# 3. Cài thư viện Python cho network device
+sudo apt install -y python3-paramiko python3-netaddr
+
+# 4. Cài Ansible Collections cho Cisco IOS
+ansible-galaxy collection install \
+  cisco.ios \
+  ansible.netcommon \
+  community.general
 ```
 
 ### Bước 2: Lấy dự án về (Clone Repository)

@@ -23,6 +23,7 @@
 - name: "PLAY 1 | Cấu hình cơ bản trên tất cả thiết bị"
   hosts: network
   gather_facts: false
+  tags: [base, always]
   roles:
     - role: 01_base
 
@@ -32,6 +33,7 @@
 - name: "PLAY 2 | Cấu hình VTP Server + VLAN trên CORE"
   hosts: core
   gather_facts: false
+  tags: [vtp, vlan]
   roles:
     - role: 02_vtp
     - role: 03_vlan

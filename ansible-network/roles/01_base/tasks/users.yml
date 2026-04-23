@@ -1,0 +1,14 @@
+---
+- name: "BASE | Tổng hợp local users cần duy trì"
+  ansible.builtin.set_fact:
+    base_effective_local_users: "{{ base_local_users + base_preserved_users }}"
+
+- name: "BASE | Tạo local users"
+  cisco.ios.ios_user:
+    name: "{{ item.name }}"
+    privilege: "{{ item.privilege | default(15) }}"
+    configured_password: "{{ item.secret }}"
+    state: present
+  loop: "{{ base_effective_local_users | unique(attribute='name') }}"
+  loop_control:
+    label: "{{ item.name }}"

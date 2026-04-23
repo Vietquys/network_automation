@@ -1,0 +1,22 @@
+---
+- name: "BASE | Cấu hình hostname và domain"
+  cisco.ios.ios_system:
+    hostname: "{{ hostname | default(inventory_hostname) }}"
+    domain_name: "{{ ssh_domain_name }}"
+    lookup_enabled: false
+
+- name: "BASE | Cấu hình Enable Secret và Password Encryption"
+  cisco.ios.ios_config:
+    lines:
+      - "enable secret {{ enable_secret }}"
+      - "service password-encryption"
+      - "ip routing"
+    match: line
+  when: "inventory_hostname in groups['routers'] or inventory_hostname in groups['core']"
+
+- name: "BASE | Bật service password-encryption (cho Access)"
+  cisco.ios.ios_config:
+    lines:
+      - "service password-encryption"
+    match: line
+  when: "inventory_hostname in groups['access']"

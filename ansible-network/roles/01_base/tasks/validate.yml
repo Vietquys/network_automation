@@ -1,0 +1,18 @@
+---
+- name: "BASE | Kiểm tra hostname"
+  ansible.builtin.assert:
+    that:
+      - hostname is defined
+      - hostname | length > 0
+    fail_msg: "Biến 'hostname' là bắt buộc cho role 01_base."
+
+- name: "BASE | Kiểm tra biến SSH/domain/user"
+  ansible.builtin.assert:
+    that:
+      - ssh_domain_name is defined
+      - ssh_domain_name | length > 0
+      - local_user is defined
+      - local_user | length > 0
+      - local_user_password is defined
+      - local_user_password | length > 0
+    fail_msg: "Thiếu biến cần thiết cho role 01_base."

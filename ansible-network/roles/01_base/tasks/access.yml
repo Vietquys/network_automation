@@ -1,0 +1,23 @@
+---
+- name: "BASE | Khởi tạo RSA Key (nếu chưa có)"
+  cisco.ios.ios_config:
+    lines:
+      - "crypto key generate rsa modulus 1024"
+    match: none
+
+- name: "BASE | Chuẩn hóa thông số SSH"
+  cisco.ios.ios_config:
+    lines: "{{ base_ssh_global_lines }}"
+
+- name: "BASE | Chuẩn hóa line console"
+  cisco.ios.ios_config:
+    lines: "{{ base_console_lines }}"
+    parents: "line con 0"
+
+- name: "BASE | Chuẩn hóa line VTY"
+  cisco.ios.ios_config:
+    lines: "{{ base_vty_lines }}"
+    parents: "{{ item }}"
+  loop: "{{ base_vty_ranges }}"
+  loop_control:
+    label: "{{ item }}"

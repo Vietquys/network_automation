@@ -1,0 +1,34 @@
+---
+base_ssh_global_lines:
+  - "ip ssh version 2"
+  - "ip ssh authentication-retries 3"
+
+base_console_lines:
+  - "logging synchronous"
+  - "exec-timeout 0 0"
+
+base_vty_ranges:
+  - "line vty 0 4"
+
+base_vty_lines:
+  - "login local"
+  - "transport input ssh"
+
+base_local_users:
+  - name: "{{ local_user }}"
+    privilege: 15
+    secret: "{{ local_user_password }}"
+
+# Giữ lại bootstrap user để tránh mất đường truy cập khi chuyển dần sang user chuẩn.
+base_preserve_bootstrap_user: true
+base_bootstrap_user:
+  name: "Cisco123"
+  privilege: 15
+  secret: "Cisco123"
+
+base_preserved_users: >-
+  {{
+    [base_bootstrap_user]
+    if base_preserve_bootstrap_user and base_bootstrap_user.name != local_user
+    else []
+  }}

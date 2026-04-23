@@ -1,0 +1,9 @@
+Host 192.168.9.*
+    KexAlgorithms +diffie-hellman-group14-sha1
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa
+
+Host 192.168.99.*
+    KexAlgorithms +diffie-hellman-group14-sha1
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa
